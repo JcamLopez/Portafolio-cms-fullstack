@@ -1,0 +1,91 @@
+import type { Request, Response } from 'express';
+import * as projectService from '../services/project.service.js';
+type ProjectParams = {
+    id: string;
+};
+type ProjectSlugParams = {
+    slug: string;
+};
+export declare const getAllProjects: (_req: Request, res: Response) => Promise<Response<import("../types/api.types.js").ApiErrorResponse, Record<string, any>> | Response<import("../types/api.types.js").ApiSuccessResponse<{
+    id: number;
+    title: string;
+    slug: string;
+    summary: string | null;
+    description: string;
+    coverImageUrl: string | null;
+    repoUrl: string | null;
+    demoUrl: string | null;
+    isPublished: boolean;
+    isFeatured: boolean;
+    publishedAt: Date | null;
+    order: number;
+    createdAt: Date;
+    updatedAt: Date;
+}[]>, Record<string, any>>>;
+export declare const getProjectById: (req: Request<ProjectParams>, res: Response) => Promise<Response<import("../types/api.types.js").ApiErrorResponse, Record<string, any>> | Response<import("../types/api.types.js").ApiSuccessResponse<{
+    id: number;
+    title: string;
+    slug: string;
+    summary: string | null;
+    description: string;
+    coverImageUrl: string | null;
+    repoUrl: string | null;
+    demoUrl: string | null;
+    isPublished: boolean;
+    isFeatured: boolean;
+    publishedAt: Date | null;
+    order: number;
+    createdAt: Date;
+    updatedAt: Date;
+}>, Record<string, any>>>;
+export declare const getProjectBySlug: (req: Request<ProjectSlugParams>, res: Response) => Promise<Response<import("../types/api.types.js").ApiErrorResponse, Record<string, any>> | Response<import("../types/api.types.js").ApiSuccessResponse<projectService.ProjectWithSkills>, Record<string, any>>>;
+export declare const createProject: (req: Request, res: Response) => Promise<Response<import("../types/api.types.js").ApiErrorResponse, Record<string, any>> | Response<import("../types/api.types.js").ApiSuccessResponse<{
+    id: number;
+    title: string;
+    slug: string;
+    summary: string | null;
+    description: string;
+    coverImageUrl: string | null;
+    repoUrl: string | null;
+    demoUrl: string | null;
+    isPublished: boolean;
+    isFeatured: boolean;
+    publishedAt: Date | null;
+    order: number;
+    createdAt: Date;
+    updatedAt: Date;
+}>, Record<string, any>>>;
+export declare const updateProject: (req: Request<ProjectParams>, res: Response) => Promise<Response<import("../types/api.types.js").ApiErrorResponse, Record<string, any>> | Response<import("../types/api.types.js").ApiSuccessResponse<{
+    id: number;
+    title: string;
+    slug: string;
+    summary: string | null;
+    description: string;
+    coverImageUrl: string | null;
+    repoUrl: string | null;
+    demoUrl: string | null;
+    isPublished: boolean;
+    isFeatured: boolean;
+    publishedAt: Date | null;
+    order: number;
+    createdAt: Date;
+    updatedAt: Date;
+}>, Record<string, any>>>;
+export declare const deleteProject: (req: Request<ProjectParams>, res: Response) => Promise<Response<import("../types/api.types.js").ApiErrorResponse, Record<string, any>> | Response<import("../types/api.types.js").ApiSuccessResponse<{
+    id: number;
+    title: string;
+    slug: string;
+    summary: string | null;
+    description: string;
+    coverImageUrl: string | null;
+    repoUrl: string | null;
+    demoUrl: string | null;
+    isPublished: boolean;
+    isFeatured: boolean;
+    publishedAt: Date | null;
+    order: number;
+    createdAt: Date;
+    updatedAt: Date;
+}>, Record<string, any>>>;
+export {};
+//# sourceMappingURL=project.controller.d.ts.map

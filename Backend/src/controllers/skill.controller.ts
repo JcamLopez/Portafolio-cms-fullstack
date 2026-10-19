@@ -1,5 +1,5 @@
 import type { Request, Response } from 'express';
-import { Prisma } from '../generated/prisma/index.js';
+import { Prisma } from '@prisma/client';
 import * as skillService from '../services/skill.service.js';
 import type { SkillInput } from '../services/skill.service.js';
 import { sendError, sendSuccess } from '../utils/response.handler.js';

@@ -6,7 +6,6 @@
 
 generator client {
   provider = "prisma-client-js"
-  output   = "../src/generated/prisma"
 }
 
 datasource db {
@@ -153,7 +152,7 @@ model Project {
   isFeatured    Boolean        @default(false)
   publishedAt   DateTime?
   order         Int            @default(0)
-  skills        Skill[]
+  skills        ProjectSkill[]
   createdAt     DateTime       @default(now())
   updatedAt     DateTime       @updatedAt
 
@@ -177,19 +176,19 @@ model ProjectImage {
 // =============================================================
 
 model Skill {
-  id          Int           @id @default(autoincrement())
-  name        String        @unique @db.VarChar(80)
-  slug        String        @unique @db.VarChar(90)
+  id          Int               @id @default(autoincrement())
+  name        String            @unique @db.VarChar(80)
+  slug        String            @unique @db.VarChar(90)
   category    SkillCategory
   level       SkillLevel?
-  iconUrl     String?       @db.VarChar(500)
-  color       String?       @db.VarChar(9) // Hex, ej. "#3178C6"
-  isFeatured  Boolean       @default(false)
-  order       Int           @default(0)
-  projects    Project[]
-  experiences Experience[]
-  createdAt   DateTime      @default(now())
-  updatedAt   DateTime      @updatedAt
+  iconUrl     String?           @db.VarChar(500)
+  color       String?           @db.VarChar(9) // Hex, ej. "#3178C6"
+  isFeatured  Boolean           @default(false)
+  order       Int               @default(0)
+  projects    ProjectSkill[]
+  experiences ExperienceSkill[]
+  createdAt   DateTime          @default(now())
+  updatedAt   DateTime          @updatedAt
 
   @@index([category, order])
 }
@@ -199,25 +198,50 @@ model Skill {
 // =============================================================
 
 model Experience {
-  id           Int            @id @default(autoincrement())
-  role         String         @db.VarChar(150)
-  organization String         @db.VarChar(150)
+  id           Int               @id @default(autoincrement())
+  role         String            @db.VarChar(150)
+  organization String            @db.VarChar(150)
   type         ExperienceType
   modality     WorkModality?
-  location     String?        @db.VarChar(120)
-  startDate    DateTime       @db.Date
-  endDate      DateTime?      @db.Date // null = actualmente
-  isCurrent    Boolean        @default(false)
-  description  String         @db.Text
+  location     String?           @db.VarChar(120)
+  startDate    DateTime          @db.Date
+  endDate      DateTime?         @db.Date // null = actualmente
+  isCurrent    Boolean           @default(false)
+  description  String            @db.Text
   highlights   Json? // Lista de logros: ["...", "..."]
-  companyUrl   String?        @db.VarChar(500)
-  logoUrl      String?        @db.VarChar(500)
-  order        Int            @default(0)
-  skills       Skill[]
-  createdAt    DateTime       @default(now())
-  updatedAt    DateTime       @updatedAt
+  companyUrl   String?           @db.VarChar(500)
+  logoUrl      String?           @db.VarChar(500)
+  order        Int               @default(0)
+  skills       ExperienceSkill[]
+  createdAt    DateTime          @default(now())
+  updatedAt    DateTime          @updatedAt
 
   @@index([startDate])
+}
+
+// =============================================================
+// Tablas intermedias (relaciones muchos-a-muchos explícitas)
+// Llave primaria compuesta: requerida por sql_require_primary_key (Aiven)
+// =============================================================
+
+model ProjectSkill {
+  projectId Int
+  skillId   Int
+  project   Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  skill     Skill   @relation(fields: [skillId], references: [id], onDelete: Cascade)
+
+  @@id([projectId, skillId])
+  @@index([skillId])
+}
+
+model ExperienceSkill {
+  experienceId Int
+  skillId      Int
+  experience   Experience @relation(fields: [experienceId], references: [id], onDelete: Cascade)
+  skill        Skill      @relation(fields: [skillId], references: [id], onDelete: Cascade)
+
+  @@id([experienceId, skillId])
+  @@index([skillId])
 }
 
 // =============================================================

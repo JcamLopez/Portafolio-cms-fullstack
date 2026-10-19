@@ -1,0 +1,86 @@
+import type { Request, Response } from 'express';
+type EducationParams = {
+    id: string;
+};
+export declare const getAllEducations: (_req: Request, res: Response) => Promise<Response<import("../types/api.types.js").ApiErrorResponse, Record<string, any>> | Response<import("../types/api.types.js").ApiSuccessResponse<{
+    id: number;
+    institution: string;
+    title: string;
+    fieldOfStudy: string | null;
+    type: import("@prisma/client").$Enums.EducationType;
+    startDate: Date | null;
+    endDate: Date | null;
+    isCurrent: boolean;
+    description: string | null;
+    credentialUrl: string | null;
+    logoUrl: string | null;
+    order: number;
+    createdAt: Date;
+    updatedAt: Date;
+}[]>, Record<string, any>>>;
+export declare const getEducationById: (req: Request<EducationParams>, res: Response) => Promise<Response<import("../types/api.types.js").ApiErrorResponse, Record<string, any>> | Response<import("../types/api.types.js").ApiSuccessResponse<{
+    id: number;
+    institution: string;
+    title: string;
+    fieldOfStudy: string | null;
+    type: import("@prisma/client").$Enums.EducationType;
+    startDate: Date | null;
+    endDate: Date | null;
+    isCurrent: boolean;
+    description: string | null;
+    credentialUrl: string | null;
+    logoUrl: string | null;
+    order: number;
+    createdAt: Date;
+    updatedAt: Date;
+}>, Record<string, any>>>;
+export declare const createEducation: (req: Request, res: Response) => Promise<Response<import("../types/api.types.js").ApiErrorResponse, Record<string, any>> | Response<import("../types/api.types.js").ApiSuccessResponse<{
+    id: number;
+    institution: string;
+    title: string;
+    fieldOfStudy: string | null;
+    type: import("@prisma/client").$Enums.EducationType;
+    startDate: Date | null;
+    endDate: Date | null;
+    isCurrent: boolean;
+    description: string | null;
+    credentialUrl: string | null;
+    logoUrl: string | null;
+    order: number;
+    createdAt: Date;
+    updatedAt: Date;
+}>, Record<string, any>>>;
+export declare const updateEducation: (req: Request<EducationParams>, res: Response) => Promise<Response<import("../types/api.types.js").ApiErrorResponse, Record<string, any>> | Response<import("../types/api.types.js").ApiSuccessResponse<{
+    id: number;
+    institution: string;
+    title: string;
+    fieldOfStudy: string | null;
+    type: import("@prisma/client").$Enums.EducationType;
+    startDate: Date | null;
+    endDate: Date | null;
+    isCurrent: boolean;
+    description: string | null;
+    credentialUrl: string | null;
+    logoUrl: string | null;
+    order: number;
+    createdAt: Date;
+    updatedAt: Date;
+}>, Record<string, any>>>;
+export declare const deleteEducation: (req: Request<EducationParams>, res: Response) => Promise<Response<import("../types/api.types.js").ApiErrorResponse, Record<string, any>> | Response<import("../types/api.types.js").ApiSuccessResponse<{
+    id: number;
+    institution: string;
+    title: string;
+    fieldOfStudy: string | null;
+    type: import("@prisma/client").$Enums.EducationType;
+    startDate: Date | null;
+    endDate: Date | null;
+    isCurrent: boolean;
+    description: string | null;
+    credentialUrl: string | null;
+    logoUrl: string | null;
+    order: number;
+    createdAt: Date;
+    updatedAt: Date;
+}>, Record<string, any>>>;
+export {};
+//# sourceMappingURL=education.controller.d.ts.map

@@ -1,7 +1,7 @@
 import bcrypt from 'bcryptjs';
 import jwt, { type SignOptions } from 'jsonwebtoken';
 import { env } from '../config/env.js';
-import { Prisma, PrismaClient, UserRole } from '../generated/prisma/index.js';
+import { Prisma, PrismaClient, UserRole } from '@prisma/client';
 import type { LoginInput, RegisterInput } from '../schemas/auth.schema.js';
 import type { AuthPayload, PublicUser } from '../types/auth.types.js';
 

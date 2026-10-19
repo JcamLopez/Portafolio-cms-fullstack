@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { EducationType } from '../generated/prisma/index.js';
+import { EducationType } from '@prisma/client';
 
 // devuelve un mensaje distinto según si el campo falta o tiene un tipo incorrecto
 const requiredText = (field: string) =>

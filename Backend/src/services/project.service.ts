@@ -1,5 +1,5 @@
-import { Prisma, PrismaClient } from '../generated/prisma/index.js';
-import type { Project } from '../generated/prisma/index.js';
+import { Prisma, PrismaClient } from '@prisma/client';
+import type { Project, Skill } from '@prisma/client';
 
 const prisma = new PrismaClient();
 
@@ -30,16 +30,26 @@ export const getProjectById = async (id: number): Promise<Project | null> => {
   return prisma.project.findUnique({ where: { id } });
 };
 
-export type ProjectWithSkills = Prisma.ProjectGetPayload<{ include: { skills: true } }>;
+export type ProjectWithSkills = Project & { skills: Skill[] };
 
 /**
  * Obtiene un proyecto por su slug junto con sus tecnologías (o null si no existe).
+ * La relación pasa por la tabla intermedia ProjectSkill; se aplana para devolver Skill[].
  */
 export const getProjectBySlug = async (slug: string): Promise<ProjectWithSkills | null> => {
-  return prisma.project.findUnique({
+  const project = await prisma.project.findUnique({
     where: { slug },
-    include: { skills: { orderBy: [{ order: 'asc' }, { name: 'asc' }] } },
+    include: {
+      skills: {
+        include: { skill: true },
+        orderBy: [{ skill: { order: 'asc' } }, { skill: { name: 'asc' } }],
+      },
+    },
   });
+
+  if (!project) return null;
+
+  return { ...project, skills: project.skills.map(({ skill }) => skill) };
 };
 
 /**

@@ -1,5 +1,5 @@
-import { Prisma, PrismaClient } from '../generated/prisma/index.js';
-import type { Education } from '../generated/prisma/index.js';
+import { Prisma, PrismaClient } from '@prisma/client';
+import type { Education } from '@prisma/client';
 
 const prisma = new PrismaClient();
 
