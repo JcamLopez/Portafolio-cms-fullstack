@@ -72,7 +72,7 @@ function ProjectDetailContent({ slug }: { slug: string }) {
             {project.summary && <p className="mt-3 text-lg text-slate-400">{project.summary}</p>}
           </header>
 
-          <div className="mt-8 aspect-video overflow-hidden rounded-2xl border border-slate-800 bg-gradient-to-br from-slate-800 to-slate-900">
+          <div className="mt-8 aspect-video overflow-hidden rounded-2xl border border-slate-800 bg-linear-to-br from-slate-800 to-slate-900">
             {project.coverImageUrl ? (
               <img src={project.coverImageUrl} alt={project.title} className="h-full w-full object-cover" />
             ) : (
@@ -83,7 +83,7 @@ function ProjectDetailContent({ slug }: { slug: string }) {
           </div>
 
           {/* whitespace-pre-wrap respeta los saltos de línea y viñetas tal como se redactaron */}
-          <div className="mt-10 whitespace-pre-wrap break-words text-base leading-relaxed text-slate-300">
+          <div className="mt-10 whitespace-pre-wrap wrap-break-word text-base leading-relaxed text-slate-300">
             {project.description}
           </div>
 

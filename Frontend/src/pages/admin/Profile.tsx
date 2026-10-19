@@ -1,4 +1,4 @@
-import { useEffect, useState, type ChangeEvent, type FormEvent } from 'react';
+import { useEffect, useState, type ChangeEvent, type SubmitEvent } from 'react';
 import { getApiErrorMessage } from '../../api/client';
 import { getProfile, updateProfile, type Profile as ProfileData, type ProfileInput } from '../../api/profileService';
 
@@ -108,7 +108,7 @@ export default function Profile() {
     if (successMessage) setSuccessMessage(null);
   };
 
-  const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
+  const handleSubmit = async (event: SubmitEvent<HTMLFormElement>) => {
     event.preventDefault();
     if (isSubmitting) return;
 
@@ -229,7 +229,7 @@ export default function Profile() {
               </label>
               <div className="flex gap-2">
                 <input id="avatarUrl" name="avatarUrl" type="url" maxLength={500} value={form.avatarUrl} onChange={handleChange} placeholder="https://…/foto.jpg" className={inputClass} />
-                <div className="flex size-[42px] shrink-0 items-center justify-center overflow-hidden rounded-lg border border-slate-700 bg-slate-950/60 text-xs text-slate-500">
+                <div className="flex size-10.5 shrink-0 items-center justify-center overflow-hidden rounded-lg border border-slate-700 bg-slate-950/60 text-xs text-slate-500">
                   {HTTP_URL.test(form.avatarUrl.trim()) ? (
                     <img src={form.avatarUrl.trim()} alt="Vista previa del avatar" className="size-full object-cover" />
                   ) : (

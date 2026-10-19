@@ -1,4 +1,4 @@
-import { useEffect, useState, type ChangeEvent, type FormEvent } from 'react';
+import { useEffect, useState, type ChangeEvent, type SubmitEvent } from 'react';
 import { getApiErrorMessage } from '../../api/client';
 import {
   createEducation,
@@ -182,7 +182,7 @@ export default function Education() {
     }
   };
 
-  const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
+  const handleSubmit = async (event: SubmitEvent<HTMLFormElement>) => {
     event.preventDefault();
     if (isSubmitting) return;
 

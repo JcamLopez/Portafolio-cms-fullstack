@@ -138,8 +138,8 @@ export default function Home() {
     <>
       {/* Hero */}
       <section id="inicio" className="relative overflow-hidden">
-        <div className="pointer-events-none absolute inset-0 -z-0">
-          <div className="absolute -top-40 left-1/2 h-[32rem] w-[32rem] -translate-x-1/2 rounded-full bg-emerald-500/20 blur-3xl" />
+        <div className="pointer-events-none absolute inset-0 z-0">
+          <div className="absolute -top-40 left-1/2 h-128 w-lg -translate-x-1/2 rounded-full bg-emerald-500/20 blur-3xl" />
           <div className="absolute top-20 right-0 h-72 w-72 rounded-full bg-cyan-500/10 blur-3xl" />
         </div>
 
@@ -169,7 +169,7 @@ export default function Home() {
 
                 <h1 className="max-w-4xl text-4xl font-extrabold leading-tight tracking-tight sm:text-6xl">
                   Hola, soy{' '}
-                  <span className="bg-gradient-to-r from-emerald-400 via-teal-300 to-cyan-400 bg-clip-text text-transparent">
+                  <span className="bg-linear-to-r from-emerald-400 via-teal-300 to-cyan-400 bg-clip-text text-transparent">
                     {profile?.fullName ?? 'Juan Camilo López Marín'}
                   </span>
                 </h1>
@@ -216,11 +216,11 @@ export default function Home() {
               {profile?.avatarUrl && (
                 <div className="order-1 flex justify-center lg:order-2">
                   <div className="relative">
-                    <div className="absolute -inset-3 rounded-[2rem] bg-gradient-to-br from-emerald-500/40 via-teal-400/20 to-cyan-500/40 blur-2xl" />
+                    <div className="absolute -inset-3 rounded-4xl bg-linear-to-br from-emerald-500/40 via-teal-400/20 to-cyan-500/40 blur-2xl" />
                     <img
                       src={profile.avatarUrl}
                       alt={profile.fullName}
-                      className="relative h-48 w-48 rounded-[2rem] border border-slate-700/60 object-cover shadow-2xl shadow-emerald-500/10 ring-1 ring-emerald-400/20 sm:h-64 sm:w-64 lg:h-80 lg:w-80"
+                      className="relative h-48 w-48 rounded-4xl border border-slate-700/60 object-cover shadow-2xl shadow-emerald-500/10 ring-1 ring-emerald-400/20 sm:h-64 sm:w-64 lg:h-80 lg:w-80"
                     />
                   </div>
                 </div>
@@ -451,7 +451,7 @@ function HeroSkeleton() {
         </div>
       </div>
       <div className="order-1 flex justify-center lg:order-2">
-        <div className="h-48 w-48 rounded-[2rem] bg-slate-800 sm:h-64 sm:w-64 lg:h-80 lg:w-80" />
+        <div className="h-48 w-48 rounded-4xl bg-slate-800 sm:h-64 sm:w-64 lg:h-80 lg:w-80" />
       </div>
     </div>
   );
@@ -482,7 +482,7 @@ function ProjectCard({ project }: { project: Project }) {
         to={detailPath}
         tabIndex={-1}
         aria-hidden="true"
-        className="relative block aspect-video overflow-hidden bg-gradient-to-br from-slate-800 to-slate-900"
+        className="relative block aspect-video overflow-hidden bg-linear-to-br from-slate-800 to-slate-900"
       >
         {project.coverImageUrl ? (
           <img
@@ -600,7 +600,7 @@ function EducationItem({ education }: { education: Education }) {
       {/* Punto de la línea de tiempo */}
       <span
         aria-hidden="true"
-        className={`absolute top-7 -left-[2.97rem] hidden h-3.5 w-3.5 rounded-full border-2 border-slate-950 sm:block ${
+        className={`absolute top-7 left-[-2.97rem] hidden h-3.5 w-3.5 rounded-full border-2 border-slate-950 sm:block ${
           education.isCurrent ? 'bg-emerald-400 ring-4 ring-emerald-400/20' : 'bg-slate-600'
         }`}
       />
@@ -675,7 +675,7 @@ function ExperienceItem({ experience }: { experience: Experience }) {
       {/* Punto de la línea de tiempo */}
       <span
         aria-hidden="true"
-        className={`absolute top-7 -left-[2.97rem] hidden h-3.5 w-3.5 rounded-full border-2 border-slate-950 sm:block ${
+        className={`absolute top-7 left-[-2.97rem] hidden h-3.5 w-3.5 rounded-full border-2 border-slate-950 sm:block ${
           experience.isCurrent ? 'bg-emerald-400 ring-4 ring-emerald-400/20' : 'bg-slate-600'
         }`}
       />

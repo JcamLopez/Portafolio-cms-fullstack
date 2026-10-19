@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, type ChangeEvent, type FormEvent } from 'react';
+import { useEffect, useRef, useState, type ChangeEvent, type SubmitEvent } from 'react';
 import { getApiErrorMessage } from '../../api/client';
 import {
   createSkill,
@@ -202,7 +202,7 @@ export default function Skills() {
     }
   };
 
-  const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
+  const handleSubmit = async (event: SubmitEvent<HTMLFormElement>) => {
     event.preventDefault();
     if (isSubmitting) return;
 
@@ -330,7 +330,7 @@ export default function Skills() {
                 aria-label="Seleccionar color"
                 value={HEX_COLOR.test(form.color) ? form.color : getSkillColor({ color: null, level: form.level || null })}
                 onChange={(e) => setForm((prev) => ({ ...prev, color: e.target.value.toUpperCase() }))}
-                className="h-[42px] w-12 shrink-0 cursor-pointer rounded-lg border border-slate-700 bg-slate-950/60 p-1"
+                className="h-10.5 w-12 shrink-0 cursor-pointer rounded-lg border border-slate-700 bg-slate-950/60 p-1"
               />
             </div>
           </div>

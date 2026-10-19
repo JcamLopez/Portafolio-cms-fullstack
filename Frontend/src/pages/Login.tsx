@@ -1,4 +1,4 @@
-import { useState, type ChangeEvent, type FormEvent } from 'react';
+import { useState, type ChangeEvent, type SubmitEvent } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { apiClient, getApiErrorMessage } from '../api/client';
 import { useAuth } from '../context/AuthContext';
@@ -34,7 +34,7 @@ export default function Login() {
     if (error) setError(null);
   };
 
-  const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
+  const handleSubmit = async (event: SubmitEvent<HTMLFormElement>) => {
     event.preventDefault();
     if (isSubmitting) return;
 

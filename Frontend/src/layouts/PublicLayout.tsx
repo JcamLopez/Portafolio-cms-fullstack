@@ -31,7 +31,7 @@ export default function PublicLayout() {
       <header className="sticky top-0 z-50 border-b border-slate-800/60 bg-slate-950/70 backdrop-blur-lg">
         <nav className="mx-auto flex h-16 max-w-6xl items-center justify-between px-6">
           <Link to="/" className="group flex items-center gap-2 text-lg font-bold tracking-tight">
-            <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-gradient-to-br from-emerald-400 to-cyan-500 text-sm font-black text-slate-950">
+            <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-linear-to-br from-emerald-400 to-cyan-500 text-sm font-black text-slate-950">
               JC
             </span>
             <span className="text-slate-100 transition-colors group-hover:text-emerald-400">
