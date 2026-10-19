@@ -5,6 +5,7 @@ import type { ProjectInput } from '../services/project.service.js';
 import { sendError, sendSuccess } from '../utils/response.handler.js';
 
 type ProjectParams = { id: string };
+type ProjectSlugParams = { slug: string };
 
 // Convierte el :id de la URL a entero positivo (o null si no es válido)
 const parseId = (rawId: string): number | null => {
@@ -32,6 +33,21 @@ export const getProjectById = async (req: Request<ProjectParams>, res: Response)
 
   try {
     const project = await projectService.getProjectById(id);
+
+    if (!project) {
+      return sendError(res, 'Proyecto no encontrado', 404);
+    }
+
+    return sendSuccess(res, project);
+  } catch (error) {
+    console.error('Error al obtener el proyecto:', error);
+    return sendError(res, 'Error interno al obtener el proyecto');
+  }
+};
+
+export const getProjectBySlug = async (req: Request<ProjectSlugParams>, res: Response) => {
+  try {
+    const project = await projectService.getProjectBySlug(req.params.slug);
 
     if (!project) {
       return sendError(res, 'Proyecto no encontrado', 404);

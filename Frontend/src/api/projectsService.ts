@@ -1,4 +1,5 @@
 import { apiClient } from './client';
+import type { Skill } from './skillsService';
 
 export interface Project {
   id: number;
@@ -15,6 +16,10 @@ export interface Project {
   order: number;
   createdAt: string;
   updatedAt: string;
+}
+
+export interface ProjectDetail extends Project {
+  skills: Skill[];
 }
 
 // Campos que el cliente puede enviar (id, timestamps y publishedAt los gestiona el servidor)
@@ -40,6 +45,13 @@ interface ApiSuccessResponse<T> {
 // VITE_API_URL ya incluye el prefijo /api, por lo que aquí basta con /projects
 export async function getProjects(): Promise<Project[]> {
   const { data } = await apiClient.get<ApiSuccessResponse<Project[]>>('/projects');
+  return data.data;
+}
+
+export async function getProjectBySlug(slug: string): Promise<ProjectDetail> {
+  const { data } = await apiClient.get<ApiSuccessResponse<ProjectDetail>>(
+    `/projects/slug/${encodeURIComponent(slug)}`,
+  );
   return data.data;
 }
 

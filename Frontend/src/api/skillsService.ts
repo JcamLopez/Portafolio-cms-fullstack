@@ -18,6 +18,21 @@ export type SkillCategory = (typeof SKILL_CATEGORIES)[number];
 export const SKILL_LEVELS = ['BEGINNER', 'INTERMEDIATE', 'ADVANCED', 'EXPERT'] as const;
 export type SkillLevel = (typeof SKILL_LEVELS)[number];
 
+// Progresión de luminosidad pensada para dark mode
+export const LEVEL_COLORS: Record<SkillLevel, string> = {
+  BEGINNER: '#64748B',
+  INTERMEDIATE: '#0EA5E9',
+  ADVANCED: '#8B5CF6',
+  EXPERT: '#10B981',
+};
+
+export const DEFAULT_SKILL_COLOR = LEVEL_COLORS.BEGINNER;
+
+// Color de la BD; si falta, el del nivel; si tampoco hay nivel, el neutro
+export function getSkillColor(skill: Pick<Skill, 'color' | 'level'>): string {
+  return skill.color || (skill.level ? LEVEL_COLORS[skill.level] : DEFAULT_SKILL_COLOR);
+}
+
 export interface Skill {
   id: number;
   name: string;

@@ -5,6 +5,7 @@ import Dashboard from './pages/admin/Dashboard';
 import Login from './pages/Login';
 import Projects from './pages/admin/Projects';
 import Home from './pages/public/Home';
+import ProjectDetail from './pages/public/ProjectDetail';
 import PublicLayout from './layouts/PublicLayout';
 import Skills from './pages/admin/Skills';
 import Profile from './pages/admin/Profile';
@@ -19,6 +20,10 @@ export const router = createBrowserRouter([
       {
         index: true,
         element: <Home />,
+      },
+      {
+        path: 'proyectos/:slug',
+        element: <ProjectDetail />,
       },
     ],
   },

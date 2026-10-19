@@ -1,4 +1,5 @@
-import { useEffect, useState, type ReactNode } from 'react';
+import { useEffect, useRef, useState, type ReactNode } from 'react';
+import { Link } from 'react-router-dom';
 import { getApiErrorMessage } from '../../api/client';
 import { getEducations, type Education, type EducationType } from '../../api/educationService';
 import {
@@ -9,7 +10,7 @@ import {
 } from '../../api/experienceService';
 import { getProfile, type Profile } from '../../api/profileService';
 import { getProjects, type Project } from '../../api/projectsService';
-import { getSkills, type Skill, type SkillCategory, type SkillLevel } from '../../api/skillsService';
+import { getSkillColor, getSkills, type Skill, type SkillCategory, type SkillLevel } from '../../api/skillsService';
 
 const CATEGORY_LABELS: Record<SkillCategory, string> = {
   LANGUAGE: 'Lenguaje',
@@ -90,6 +91,8 @@ export default function Home() {
   const [experiences, setExperiences] = useState<Experience[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [notificacion, setNotificacion] = useState<string | null>(null);
+  const notificacionTimeout = useRef<ReturnType<typeof setTimeout>>(undefined);
 
   useEffect(() => {
     let cancelled = false;
@@ -120,6 +123,16 @@ export default function Home() {
       cancelled = true;
     };
   }, []);
+
+  // No usa preventDefault: el href (mailto / wa.me) se sigue abriendo además de copiar el dato
+  const handleClickYCopiar = (texto: string, tipo: string) => {
+    navigator.clipboard?.writeText(texto).catch(() => {});
+    setNotificacion(tipo);
+    clearTimeout(notificacionTimeout.current);
+    notificacionTimeout.current = setTimeout(() => setNotificacion(null), 3000);
+  };
+
+  useEffect(() => () => clearTimeout(notificacionTimeout.current), []);
 
   return (
     <>
@@ -336,16 +349,25 @@ export default function Home() {
                 </p>
                 <div className="grid gap-4 sm:grid-cols-2">
                   {profile?.email && (
-                    <ContactLink href={`mailto:${profile.email}`} label="Email" value={profile.email}>
+                    <ContactLink
+                      href={`mailto:${profile.email}`}
+                      label="Email"
+                      value={profile.email}
+                      copied={notificacion === 'email'}
+                      onClick={() => handleClickYCopiar(profile.email!, 'email')}
+                    >
                       <path strokeLinecap="round" strokeLinejoin="round" d="M4 6h16v12H4z" />
                       <path strokeLinecap="round" strokeLinejoin="round" d="m4 7 8 6 8-6" />
                     </ContactLink>
                   )}
                   {profile?.phone && (
                     <ContactLink
-                      href={`tel:${profile.phone.replace(/[^\d+]/g, '')}`}
-                      label="Teléfono"
+                      href={toWhatsAppUrl(profile.phone)}
+                      label="WhatsApp"
                       value={profile.phone}
+                      external
+                      copied={notificacion === 'telefono'}
+                      onClick={() => handleClickYCopiar(profile.phone!, 'telefono')}
                     >
                       <path
                         strokeLinecap="round"
@@ -364,21 +386,35 @@ export default function Home() {
   );
 }
 
+// wa.me requiere el número con código de país y solo dígitos; asume Colombia (57) si falta.
+function toWhatsAppUrl(phone: string) {
+  const digits = phone.replace(/\D/g, '');
+  return `https://wa.me/${digits.length === 10 ? `57${digits}` : digits}`;
+}
+
 function ContactLink({
   href,
   label,
   value,
+  external = false,
+  copied = false,
+  onClick,
   children,
 }: {
   href: string;
   label: string;
   value: string;
+  external?: boolean;
+  copied?: boolean;
+  onClick?: () => void;
   children: ReactNode;
 }) {
   return (
     <a
       href={href}
-      className="group flex items-center gap-4 rounded-2xl border border-slate-800 bg-slate-900/60 p-5 transition-all hover:-translate-y-0.5 hover:border-emerald-500/40 hover:shadow-xl hover:shadow-emerald-500/5"
+      onClick={onClick}
+      {...(external && { target: '_blank', rel: 'noopener noreferrer' })}
+      className="group flex cursor-pointer items-center gap-4 rounded-2xl border border-slate-800 bg-slate-900/60 p-5 transition-all duration-200 hover:scale-105 hover:border-emerald-500/50 hover:shadow-xl hover:shadow-emerald-500/5"
     >
       <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl border border-emerald-500/20 bg-emerald-500/10 text-emerald-400 transition-colors group-hover:bg-emerald-500 group-hover:text-slate-950">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} className="h-5 w-5" aria-hidden="true">
@@ -388,6 +424,11 @@ function ContactLink({
       <div className="min-w-0">
         <p className="text-xs font-medium uppercase tracking-wider text-slate-500">{label}</p>
         <p className="truncate font-medium text-slate-200 transition-colors group-hover:text-emerald-400">{value}</p>
+        {copied && (
+          <span className="mt-1 block text-xs text-emerald-400" role="status">
+            ¡Copiado en el portapapeles! Puedes presionar Ctrl+V
+          </span>
+        )}
       </div>
     </a>
   );
@@ -432,9 +473,17 @@ function EmptyState({ text }: { text: string }) {
 }
 
 function ProjectCard({ project }: { project: Project }) {
+  const detailPath = `/proyectos/${project.slug}`;
+
   return (
     <article className="group flex flex-col overflow-hidden rounded-2xl border border-slate-800 bg-slate-900/60 transition-all hover:-translate-y-1 hover:border-emerald-500/40 hover:shadow-xl hover:shadow-emerald-500/5">
-      <div className="relative aspect-video overflow-hidden bg-gradient-to-br from-slate-800 to-slate-900">
+      {/* Solo la portada y el título enlazan al detalle; los botones externos quedan fuera para evitar enlaces anidados */}
+      <Link
+        to={detailPath}
+        tabIndex={-1}
+        aria-hidden="true"
+        className="relative block aspect-video overflow-hidden bg-gradient-to-br from-slate-800 to-slate-900"
+      >
         {project.coverImageUrl ? (
           <img
             src={project.coverImageUrl}
@@ -452,13 +501,30 @@ function ProjectCard({ project }: { project: Project }) {
             Destacado
           </span>
         )}
-      </div>
+      </Link>
 
       <div className="flex flex-1 flex-col p-6">
-        <h3 className="text-lg font-semibold text-slate-100">{project.title}</h3>
-        <p className="mt-2 line-clamp-3 flex-1 text-sm leading-relaxed text-slate-400">
-          {project.summary || project.description}
-        </p>
+        <h3 className="text-lg font-semibold text-slate-100">
+          <Link
+            to={detailPath}
+            className="underline-offset-4 transition-colors hover:text-emerald-400 hover:underline focus-visible:text-emerald-400 focus-visible:underline focus-visible:outline-none"
+          >
+            {project.title}
+          </Link>
+        </h3>
+        <div className="mt-2 flex-1">
+          <p className="line-clamp-3 text-sm leading-relaxed text-slate-400">
+            {project.summary || project.description}
+          </p>
+          <Link
+            to={detailPath}
+            aria-label={`Leer más sobre ${project.title}`}
+            className="mt-2 inline-flex items-center gap-1 text-sm font-medium text-emerald-400 transition-colors hover:text-emerald-300 hover:underline"
+          >
+            Leer más
+            <span aria-hidden="true">&rarr;</span>
+          </Link>
+        </div>
 
         {(project.repoUrl || project.demoUrl) && (
           <div className="mt-6 flex gap-3">
@@ -490,7 +556,7 @@ function ProjectCard({ project }: { project: Project }) {
 }
 
 function SkillCard({ skill }: { skill: Skill }) {
-  const accent = skill.color ?? '#34d399';
+  const accent = getSkillColor(skill);
 
   return (
     <div className="group flex flex-col gap-3 rounded-xl border border-slate-800 bg-slate-900/60 p-4 transition-all hover:-translate-y-0.5 hover:border-slate-700">

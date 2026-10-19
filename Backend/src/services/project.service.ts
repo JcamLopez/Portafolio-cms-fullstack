@@ -30,11 +30,16 @@ export const getProjectById = async (id: number): Promise<Project | null> => {
   return prisma.project.findUnique({ where: { id } });
 };
 
+export type ProjectWithSkills = Prisma.ProjectGetPayload<{ include: { skills: true } }>;
+
 /**
- * Obtiene un proyecto por su slug (o null si no existe).
+ * Obtiene un proyecto por su slug junto con sus tecnologías (o null si no existe).
  */
-export const getProjectBySlug = async (slug: string): Promise<Project | null> => {
-  return prisma.project.findUnique({ where: { slug } });
+export const getProjectBySlug = async (slug: string): Promise<ProjectWithSkills | null> => {
+  return prisma.project.findUnique({
+    where: { slug },
+    include: { skills: { orderBy: [{ order: 'asc' }, { name: 'asc' }] } },
+  });
 };
 
 /**

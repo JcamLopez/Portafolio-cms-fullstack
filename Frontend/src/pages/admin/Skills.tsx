@@ -5,6 +5,8 @@ import {
   deleteSkill,
   getSkills,
   updateSkill,
+  getSkillColor,
+  LEVEL_COLORS,
   SKILL_CATEGORIES,
   SKILL_LEVELS,
   type Skill,
@@ -146,6 +148,8 @@ export default function Skills() {
       const next = { ...prev, [name]: value };
       // El slug se genera a partir del nombre hasta que el usuario lo edite a mano
       if (name === 'name' && !slugTouched) next.slug = slugify(value);
+      // Al elegir nivel se sugiere su color; el usuario puede sobrescribirlo después
+      if (name === 'level' && value) next.color = LEVEL_COLORS[value as SkillLevel];
       return next;
     });
 
@@ -324,7 +328,7 @@ export default function Skills() {
               <input
                 type="color"
                 aria-label="Seleccionar color"
-                value={HEX_COLOR.test(form.color) ? form.color : '#10b981'}
+                value={HEX_COLOR.test(form.color) ? form.color : getSkillColor({ color: null, level: form.level || null })}
                 onChange={(e) => setForm((prev) => ({ ...prev, color: e.target.value.toUpperCase() }))}
                 className="h-[42px] w-12 shrink-0 cursor-pointer rounded-lg border border-slate-700 bg-slate-950/60 p-1"
               />
@@ -417,7 +421,7 @@ const cardActionClass =
   'flex size-8 items-center justify-center rounded-md transition focus-visible:outline-2 focus-visible:outline-offset-2 disabled:cursor-not-allowed disabled:opacity-50';
 
 function SkillCard({ skill, isEditing, isDeleting, onEdit, onDelete }: SkillCardProps) {
-  const accent = skill.color ?? '#10b981';
+  const accent = getSkillColor(skill);
 
   return (
     <article
@@ -447,7 +451,10 @@ function SkillCard({ skill, isEditing, isDeleting, onEdit, onDelete }: SkillCard
             {CATEGORY_LABELS[skill.category]}
           </span>
           {skill.level && (
-            <span className="rounded-full bg-emerald-500/10 px-2.5 py-0.5 text-xs font-medium text-emerald-400">
+            <span
+              className="rounded-full px-2.5 py-0.5 text-xs font-medium"
+              style={{ backgroundColor: `${accent}1a`, color: accent }}
+            >
               {LEVEL_LABELS[skill.level]}
             </span>
           )}
