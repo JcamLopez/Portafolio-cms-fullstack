@@ -81,8 +81,6 @@ function formatPeriod({ startDate, endDate, isCurrent }: Period): string | null 
   return end ? `${start} — ${end}` : start;
 }
 
-const byOrder = <T extends { order: number }>(a: T, b: T) => a.order - b.order;
-
 export default function Home() {
   const [profile, setProfile] = useState<Profile | null>(null);
   const [projects, setProjects] = useState<Project[]>([]);
@@ -101,14 +99,10 @@ export default function Home() {
       .then(([profileData, projectsData, skillsData, educationsData, experiencesData]) => {
         if (cancelled) return;
         setProfile(profileData);
-        // Solo se muestran los proyectos publicados; los destacados primero
-        setProjects(
-          projectsData
-            .filter((project) => project.isPublished)
-            .sort((a, b) => Number(b.isFeatured) - Number(a.isFeatured) || byOrder(a, b)),
-        );
-        setSkills([...skillsData].sort(byOrder));
-        // El backend ya las devuelve de la más reciente a la más antigua
+        // El backend ya devuelve cada lista ordenada (relevancia + cronológico inverso).
+        // Solo se muestran los proyectos publicados.
+        setProjects(projectsData.filter((project) => project.isPublished));
+        setSkills(skillsData);
         setEducations(educationsData);
         setExperiences(experiencesData);
       })
@@ -594,6 +588,8 @@ function SkillCard({ skill }: { skill: Skill }) {
 
 function EducationItem({ education }: { education: Education }) {
   const period = formatPeriod(education);
+  // El título universitario se resalta frente a cursos, diplomados, etc.
+  const isPrimary = education.type === 'UNDERGRADUATE';
 
   return (
     <li className="relative">
@@ -601,11 +597,17 @@ function EducationItem({ education }: { education: Education }) {
       <span
         aria-hidden="true"
         className={`absolute top-7 left-[-2.97rem] hidden h-3.5 w-3.5 rounded-full border-2 border-slate-950 sm:block ${
-          education.isCurrent ? 'bg-emerald-400 ring-4 ring-emerald-400/20' : 'bg-slate-600'
+          education.isCurrent || isPrimary ? 'bg-emerald-400 ring-4 ring-emerald-400/20' : 'bg-slate-600'
         }`}
       />
 
-      <article className="group rounded-2xl border border-slate-800 bg-slate-900/60 p-6 transition-all hover:-translate-y-0.5 hover:border-emerald-500/40 hover:shadow-xl hover:shadow-emerald-500/5">
+      <article
+        className={`group rounded-2xl border p-6 transition-all hover:-translate-y-0.5 hover:shadow-xl ${
+          isPrimary
+            ? 'border-emerald-500/50 border-l-4 border-l-emerald-400 bg-linear-to-br from-emerald-500/10 via-slate-900/60 to-slate-900/60 shadow-lg shadow-emerald-500/10 hover:border-emerald-400/70 hover:shadow-emerald-500/15'
+            : 'border-slate-800 bg-slate-900/60 hover:border-emerald-500/40 hover:shadow-emerald-500/5'
+        }`}
+      >
         <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
           <div className="flex min-w-0 items-start gap-4">
             {education.logoUrl && (
@@ -620,6 +622,14 @@ function EducationItem({ education }: { education: Education }) {
               <h3 className="text-lg font-semibold text-slate-100">{education.title}</h3>
               <p className="mt-0.5 text-sm font-medium text-emerald-400">{education.institution}</p>
               <div className="mt-2 flex flex-wrap gap-1.5">
+                {isPrimary && (
+                  <span className="inline-flex items-center gap-1 rounded-full bg-emerald-500 px-2.5 py-0.5 text-xs font-semibold text-slate-950">
+                    <svg viewBox="0 0 24 24" fill="currentColor" className="h-3 w-3" aria-hidden="true">
+                      <path d="M12 2.5l2.9 6 6.6.9-4.8 4.6 1.2 6.5L12 17.4l-5.9 3.1 1.2-6.5L2.5 9.4l6.6-.9z" />
+                    </svg>
+                    Principal
+                  </span>
+                )}
                 <span className="rounded-full bg-slate-800 px-2.5 py-0.5 text-xs font-medium text-slate-300">
                   {TYPE_LABELS[education.type]}
                 </span>

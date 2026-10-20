@@ -14,12 +14,12 @@ const isNotFoundError = (error: unknown) =>
   error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2025';
 
 /**
- * Obtiene todos los proyectos ordenados por `order` (asc) y, a igual orden,
- * por fecha de creación (más recientes primero).
+ * Obtiene todos los proyectos: los destacados primero (isFeatured desc) y, dentro
+ * de cada grupo, los más recientes primero (createdAt desc).
  */
 export const getAllProjects = async (): Promise<Project[]> => {
   return prisma.project.findMany({
-    orderBy: [{ order: 'asc' }, { createdAt: 'desc' }],
+    orderBy: [{ isFeatured: 'desc' }, { createdAt: 'desc' }],
   });
 };
 

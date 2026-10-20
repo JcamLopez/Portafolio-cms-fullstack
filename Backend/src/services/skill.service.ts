@@ -11,12 +11,12 @@ const isNotFoundError = (error: unknown) =>
   error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2025';
 
 /**
- * Obtiene todas las habilidades agrupadas lógicamente: primero por `category` (asc),
- * dentro de cada categoría por `order` (asc) y, a igual orden, por nombre.
+ * Obtiene todas las habilidades: las destacadas primero (isFeatured desc), luego
+ * por `order` (asc) y, a igual orden, por nombre.
  */
 export const getAllSkills = async (): Promise<Skill[]> => {
   return prisma.skill.findMany({
-    orderBy: [{ category: 'asc' }, { order: 'asc' }, { name: 'asc' }],
+    orderBy: [{ isFeatured: 'desc' }, { order: 'asc' }, { name: 'asc' }],
   });
 };
 

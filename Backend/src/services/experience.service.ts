@@ -20,12 +20,12 @@ const toPrismaData = ({ highlights, ...rest }: ExperienceInput) => ({
 });
 
 /**
- * Obtiene todas las experiencias, las más recientes primero (startDate desc)
- * y, a igual fecha de inicio, por `order` (asc).
+ * Obtiene todas las experiencias: por prioridad manual (`order` asc), luego el
+ * trabajo actual primero (isCurrent desc) y por último las más recientes (startDate desc).
  */
 export const getAllExperiences = async (): Promise<Experience[]> => {
   return prisma.experience.findMany({
-    orderBy: [{ startDate: 'desc' }, { order: 'asc' }],
+    orderBy: [{ order: 'asc' }, { isCurrent: 'desc' }, { startDate: 'desc' }],
   });
 };
 

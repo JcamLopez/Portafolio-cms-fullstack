@@ -11,12 +11,13 @@ const isNotFoundError = (error: unknown) =>
   error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2025';
 
 /**
- * Obtiene toda la formación, la más reciente primero (startDate desc)
- * y, a igual fecha de inicio, por `order` (asc).
+ * Obtiene toda la formación: primero por prioridad manual (`order` asc, para destacar
+ * el título principal) y luego la más reciente primero (endDate desc). Las que no
+ * tienen fecha de fin (en curso) se tratan como las más recientes.
  */
 export const getAllEducations = async (): Promise<Education[]> => {
   return prisma.education.findMany({
-    orderBy: [{ startDate: 'desc' }, { order: 'asc' }],
+    orderBy: [{ order: 'asc' }, { endDate: { sort: 'desc', nulls: 'first' } }],
   });
 };
 
