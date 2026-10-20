@@ -43,6 +43,7 @@ export const educationSchema = z
     startDate: optionalDate('startDate'),
     endDate: optionalDate('endDate'),
     isCurrent: z.boolean({ error: 'El campo isCurrent debe ser verdadero o falso' }).optional(),
+    isFeatured: z.boolean({ error: 'El campo isFeatured debe ser verdadero o falso' }).optional(),
     description: optionalText('description'),
     fieldOfStudy: optionalText('fieldOfStudy', 150),
     credentialUrl: optionalUrl('credentialUrl'),

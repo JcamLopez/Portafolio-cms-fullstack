@@ -2,6 +2,7 @@ import type { Request, Response } from 'express';
 import { Prisma } from '@prisma/client';
 import * as projectService from '../services/project.service.js';
 import type { ProjectInput } from '../services/project.service.js';
+import type { FeaturedInput, ReorderInput } from '../schemas/common.schema.js';
 import { sendError, sendSuccess } from '../utils/response.handler.js';
 
 type ProjectParams = { id: string };
@@ -111,5 +112,42 @@ export const deleteProject = async (req: Request<ProjectParams>, res: Response) 
   } catch (error) {
     console.error('Error al eliminar el proyecto:', error);
     return sendError(res, 'Error interno al eliminar el proyecto');
+  }
+};
+
+export const reorderProjects = async (req: Request, res: Response) => {
+  try {
+    // req.body ya fue validado por validateSchema(reorderSchema)
+    const { ids } = req.body as ReorderInput;
+    const updated = await projectService.reorderProjects(ids);
+
+    if (!updated) {
+      return sendError(res, 'Alguno de los ids no existe; no se aplicó el nuevo orden', 404);
+    }
+
+    return sendSuccess(res, await projectService.getAllProjects(), 200, 'Orden actualizado correctamente');
+  } catch (error) {
+    console.error('Error al reordenar los proyectos:', error);
+    return sendError(res, 'Error interno al reordenar los proyectos');
+  }
+};
+
+export const setProjectFeatured = async (req: Request<ProjectParams>, res: Response) => {
+  const id = parseId(req.params.id);
+  if (id === null) return sendError(res, 'El id de el proyecto no es válido', 400);
+
+  try {
+    // req.body ya fue validado por validateSchema(featuredSchema)
+    const { isFeatured } = req.body as FeaturedInput;
+    const item = await projectService.setProjectFeatured(id, isFeatured);
+
+    if (!item) {
+      return sendError(res, 'Proyecto no encontrado', 404);
+    }
+
+    return sendSuccess(res, item, 200, isFeatured ? 'Marcado como destacado' : 'Ya no está destacado');
+  } catch (error) {
+    console.error('Error al cambiar el destacado de el proyecto:', error);
+    return sendError(res, 'Error interno al cambiar el destacado de el proyecto');
   }
 };

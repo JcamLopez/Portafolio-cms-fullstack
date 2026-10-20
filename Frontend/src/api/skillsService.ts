@@ -85,3 +85,14 @@ export async function deleteSkill(id: number): Promise<Skill> {
   const { data } = await apiClient.delete<ApiSuccessResponse<Skill>>(`/skills/${id}`);
   return data.data;
 }
+
+// Guarda el orden manual: `ids` en la nueva posición. Devuelve la lista ya reordenada
+export async function reorderSkills(ids: number[]): Promise<Skill[]> {
+  const { data } = await apiClient.put<ApiSuccessResponse<Skill[]>>('/skills/reorder', { ids });
+  return data.data;
+}
+
+export async function setSkillFeatured(id: number, isFeatured: boolean): Promise<Skill> {
+  const { data } = await apiClient.patch<ApiSuccessResponse<Skill>>(`/skills/${id}/featured`, { isFeatured });
+  return data.data;
+}

@@ -18,7 +18,7 @@ app.use(
   cors({
     // solo los frontends listados en CORS_ORIGINS; las peticiones sin Origin (curl, Postman) pasan
     origin: env.CORS_ORIGINS,
-    methods: ['GET', 'POST', 'PUT', 'DELETE'],
+    methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE'],
     allowedHeaders: ['Content-Type', 'Authorization'],
     // el JWT viaja en el header Authorization, no en cookies
     credentials: false,

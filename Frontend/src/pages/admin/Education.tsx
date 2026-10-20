@@ -1,15 +1,21 @@
-import { useEffect, useState, type ChangeEvent, type SubmitEvent } from 'react';
+import { useEffect, useState, type ChangeEvent, type ReactNode, type SubmitEvent } from 'react';
 import { getApiErrorMessage } from '../../api/client';
 import {
   createEducation,
   deleteEducation,
   EDUCATION_TYPES,
   getEducations,
+  reorderEducations,
+  setEducationFeatured,
   updateEducation,
   type Education as EducationItem,
   type EducationInput,
   type EducationType,
 } from '../../api/educationService';
+import FeaturedToggle from '../../components/FeaturedToggle';
+import SortableGrid from '../../components/SortableGrid';
+import { useManualOrder } from '../../hooks/useManualOrder';
+import { FEATURED_CARD_CLASS } from '../../styles/featured';
 
 const TYPE_LABELS: Record<EducationType, string> = {
   UNDERGRADUATE: 'Grado universitario',
@@ -93,7 +99,7 @@ function formatPeriod(education: EducationItem): string | null {
 }
 
 const inputClass =
-  'block w-full rounded-lg border border-slate-700 bg-slate-950/60 px-3.5 py-2.5 text-sm text-slate-100 placeholder:text-slate-500 outline-none transition focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/30 disabled:cursor-not-allowed disabled:opacity-40 [color-scheme:dark]';
+  'block w-full min-w-0 rounded-lg border border-slate-700 bg-slate-950/60 px-3.5 py-2.5 text-sm text-slate-100 placeholder:text-slate-500 outline-none transition focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/30 disabled:cursor-not-allowed disabled:opacity-40 [color-scheme:dark]';
 const labelClass = 'mb-1.5 block text-sm font-medium text-slate-300';
 
 export default function Education() {
@@ -107,6 +113,10 @@ export default function Education() {
   const [formError, setFormError] = useState<string | null>(null);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
   const [deletingId, setDeletingId] = useState<number | null>(null);
+  const { reorder, toggleFeatured, isReordering, togglingId, actionError } = useManualOrder(educations, setEducations, {
+    reorder: reorderEducations,
+    setFeatured: setEducationFeatured,
+  });
 
   const loadEducations = async () => {
     setLoadError(null);
@@ -222,7 +232,7 @@ export default function Education() {
       <form
         onSubmit={handleSubmit}
         noValidate
-        className="rounded-xl border border-slate-800 bg-slate-800/50 p-6 shadow-lg shadow-black/20"
+        className="rounded-xl border border-slate-800 bg-slate-800/50 p-4 shadow-lg shadow-black/20 sm:p-6"
       >
         <h3 className="mb-5 text-lg font-semibold text-slate-100">
           {editingId === null ? 'Nueva formación' : 'Editar formación'}
@@ -239,7 +249,7 @@ export default function Education() {
           </div>
         )}
 
-        <div className="grid gap-5 md:grid-cols-2">
+        <div className="grid grid-cols-1 gap-5 md:grid-cols-2">
           <div>
             <label htmlFor="institution" className={labelClass}>
               Institución <span className="text-red-400">*</span>
@@ -353,13 +363,23 @@ export default function Education() {
       </form>
 
       <div>
-        <div className="mb-4 flex items-baseline justify-between">
+        <div className="mb-4 flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1">
           <h3 className="text-lg font-semibold text-slate-100">Listado</h3>
-          {!isLoading && !loadError && <span className="text-sm text-slate-400">{educations.length} registro(s)</span>}
+          {!isLoading && !loadError && (
+            <span className="text-sm text-slate-400">
+              {isReordering ? 'Guardando orden…' : `${educations.length} registro(s) · arrastra ⠿ para ordenar`}
+            </span>
+          )}
         </div>
 
+        {actionError && (
+          <div role="alert" className="mb-4 rounded-lg border border-red-500/30 bg-red-500/10 px-4 py-3 text-sm text-red-300">
+            {actionError}
+          </div>
+        )}
+
         {isLoading ? (
-          <div className="grid gap-4 lg:grid-cols-2">
+          <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
             {Array.from({ length: 2 }, (_, i) => (
               <div key={i} className="h-36 animate-pulse rounded-xl border border-slate-800 bg-slate-800/40" />
             ))}
@@ -373,18 +393,20 @@ export default function Education() {
             Aún no hay formación registrada. Añade la primera con el formulario de arriba.
           </div>
         ) : (
-          <div className="grid gap-4 lg:grid-cols-2">
-            {educations.map((education) => (
+          <SortableGrid items={educations} onReorder={reorder} disabled={isReordering} className="grid grid-cols-1 gap-4 lg:grid-cols-2">
+            {(education, dragHandle) => (
               <EducationCard
-                key={education.id}
                 education={education}
                 isEditing={editingId === education.id}
                 isDeleting={deletingId === education.id}
+                isTogglingFeatured={togglingId === education.id}
+                dragHandle={dragHandle}
                 onEdit={() => handleEdit(education)}
                 onDelete={() => handleDelete(education)}
+                onToggleFeatured={() => toggleFeatured(education)}
               />
-            ))}
-          </div>
+            )}
+          </SortableGrid>
         )}
       </div>
     </section>
@@ -395,17 +417,33 @@ interface EducationCardProps {
   education: EducationItem;
   isEditing: boolean;
   isDeleting: boolean;
+  isTogglingFeatured: boolean;
+  dragHandle: ReactNode;
   onEdit: () => void;
   onDelete: () => void;
+  onToggleFeatured: () => void;
 }
 
-function EducationCard({ education, isEditing, isDeleting, onEdit, onDelete }: EducationCardProps) {
+function EducationCard({
+  education,
+  isEditing,
+  isDeleting,
+  isTogglingFeatured,
+  dragHandle,
+  onEdit,
+  onDelete,
+  onToggleFeatured,
+}: EducationCardProps) {
   const period = formatPeriod(education);
 
   return (
     <article
-      className={`flex flex-col gap-4 rounded-xl border bg-slate-800/50 p-5 shadow-lg shadow-black/20 transition ${
-        isEditing ? 'border-emerald-500/60' : 'border-slate-800 hover:border-slate-700'
+      className={`flex h-full flex-col gap-4 rounded-xl border bg-slate-800/50 p-5 transition ${
+        isEditing
+          ? 'border-emerald-500/60 shadow-lg shadow-black/20'
+          : education.isFeatured
+            ? FEATURED_CARD_CLASS
+            : 'border-slate-800 shadow-lg shadow-black/20 hover:border-slate-700'
       }`}
     >
       <div className="flex gap-4">
@@ -418,7 +456,7 @@ function EducationCard({ education, isEditing, isDeleting, onEdit, onDelete }: E
         </div>
 
         <div className="min-w-0 flex-1">
-          <h4 className="text-base font-semibold text-slate-100">{education.title}</h4>
+          <h4 className="text-base font-semibold wrap-break-word text-slate-100">{education.title}</h4>
           <p className="truncate text-sm text-slate-300">{education.institution}</p>
           <div className="mt-2 flex flex-wrap items-center gap-1.5">
             <span className="rounded-full bg-slate-700/60 px-2.5 py-0.5 text-xs font-medium text-slate-300">
@@ -434,6 +472,9 @@ function EducationCard({ education, isEditing, isDeleting, onEdit, onDelete }: E
                 En curso
               </span>
             )}
+            {education.isFeatured && (
+              <span className="rounded-full bg-emerald-500 px-2.5 py-0.5 text-xs font-semibold text-slate-950">Principal</span>
+            )}
           </div>
           {period && <p className="mt-2 text-xs capitalize text-slate-400">{period}</p>}
         </div>
@@ -444,20 +485,22 @@ function EducationCard({ education, isEditing, isDeleting, onEdit, onDelete }: E
       )}
 
       <div className="mt-auto flex flex-wrap items-center justify-between gap-3 border-t border-slate-700/60 pt-4">
-        {education.credentialUrl ? (
-          <a
-            href={education.credentialUrl}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="text-sm font-medium text-emerald-400 hover:text-emerald-300 hover:underline"
-          >
-            Ver credencial ↗
-          </a>
-        ) : (
-          <span />
-        )}
+        <div className="flex items-center gap-2">
+          {dragHandle}
+          {education.credentialUrl && (
+            <a
+              href={education.credentialUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-sm font-medium text-emerald-400 hover:text-emerald-300 hover:underline"
+            >
+              Ver credencial ↗
+            </a>
+          )}
+        </div>
 
-        <div className="flex gap-2">
+        <div className="flex items-center gap-2">
+          <FeaturedToggle isFeatured={education.isFeatured} isLoading={isTogglingFeatured} onToggle={onToggleFeatured} />
           <button
             type="button"
             onClick={onEdit}

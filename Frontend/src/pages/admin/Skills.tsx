@@ -1,19 +1,25 @@
-import { useEffect, useRef, useState, type ChangeEvent, type SubmitEvent } from 'react';
+import { useEffect, useRef, useState, type ChangeEvent, type ReactNode, type SubmitEvent } from 'react';
 import { getApiErrorMessage } from '../../api/client';
 import {
   createSkill,
   deleteSkill,
-  getSkills,
-  updateSkill,
   getSkillColor,
+  getSkills,
   LEVEL_COLORS,
+  reorderSkills,
+  setSkillFeatured,
   SKILL_CATEGORIES,
   SKILL_LEVELS,
+  updateSkill,
   type Skill,
   type SkillCategory,
   type SkillInput,
   type SkillLevel,
 } from '../../api/skillsService';
+import FeaturedToggle from '../../components/FeaturedToggle';
+import SortableGrid from '../../components/SortableGrid';
+import { useManualOrder } from '../../hooks/useManualOrder';
+import { FEATURED_CARD_CLASS } from '../../styles/featured';
 
 const CATEGORY_LABELS: Record<SkillCategory, string> = {
   LANGUAGE: 'Lenguaje',
@@ -94,7 +100,7 @@ function toFormState(skill: Skill): SkillFormState {
 }
 
 const inputClass =
-  'block w-full rounded-lg border border-slate-700 bg-slate-950/60 px-3.5 py-2.5 text-sm text-slate-100 placeholder:text-slate-500 outline-none transition focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/30';
+  'block w-full min-w-0 rounded-lg border border-slate-700 bg-slate-950/60 px-3.5 py-2.5 text-sm text-slate-100 placeholder:text-slate-500 outline-none transition focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/30';
 const labelClass = 'mb-1.5 block text-sm font-medium text-slate-300';
 
 export default function Skills() {
@@ -110,6 +116,16 @@ export default function Skills() {
   const [editingId, setEditingId] = useState<number | null>(null);
   const [deletingId, setDeletingId] = useState<number | null>(null);
   const formRef = useRef<HTMLFormElement>(null);
+  const { reorder, toggleFeatured, isReordering, togglingId, actionError } = useManualOrder(skills, setSkills, {
+    reorder: reorderSkills,
+    setFeatured: setSkillFeatured,
+  });
+
+  // El formulario en edición también envía isFeatured: se mantiene sincronizado con la estrella
+  const handleToggleFeatured = async (skill: Skill) => {
+    const saved = await toggleFeatured(skill);
+    if (saved && editingId === saved.id) setForm((prev) => ({ ...prev, isFeatured: saved.isFeatured }));
+  };
 
   const loadSkills = async () => {
     setLoadError(null);
@@ -250,7 +266,7 @@ export default function Skills() {
         ref={formRef}
         onSubmit={handleSubmit}
         noValidate
-        className={`scroll-mt-6 rounded-xl border bg-slate-800/50 p-6 shadow-lg shadow-black/20 transition ${
+        className={`scroll-mt-20 rounded-xl border bg-slate-800/50 p-4 shadow-lg shadow-black/20 sm:p-6 transition ${
           isEditing ? 'border-emerald-500/50 ring-1 ring-emerald-500/30' : 'border-slate-800'
         }`}
       >
@@ -267,7 +283,7 @@ export default function Skills() {
           </div>
         )}
 
-        <div className="grid gap-5 md:grid-cols-2">
+        <div className="grid grid-cols-1 gap-5 md:grid-cols-2">
           <div>
             <label htmlFor="name" className={labelClass}>
               Nombre <span className="text-red-400">*</span>
@@ -371,13 +387,23 @@ export default function Skills() {
       </form>
 
       <div>
-        <div className="mb-4 flex items-baseline justify-between">
+        <div className="mb-4 flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1">
           <h3 className="text-lg font-semibold text-slate-100">Listado</h3>
-          {!isLoading && !loadError && <span className="text-sm text-slate-400">{skills.length} habilidad(es)</span>}
+          {!isLoading && !loadError && (
+            <span className="text-sm text-slate-400">
+              {isReordering ? 'Guardando orden…' : `${skills.length} habilidad(es) · arrastra ⠿ para ordenar`}
+            </span>
+          )}
         </div>
 
+        {actionError && (
+          <div role="alert" className="mb-4 rounded-lg border border-red-500/30 bg-red-500/10 px-4 py-3 text-sm text-red-300">
+            {actionError}
+          </div>
+        )}
+
         {isLoading ? (
-          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4">
             {Array.from({ length: 4 }, (_, i) => (
               <div key={i} className="h-24 animate-pulse rounded-xl border border-slate-800 bg-slate-800/40" />
             ))}
@@ -391,18 +417,25 @@ export default function Skills() {
             Aún no hay habilidades. Registra la primera con el formulario de arriba.
           </div>
         ) : (
-          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-            {skills.map((skill) => (
+          <SortableGrid
+            items={skills}
+            onReorder={reorder}
+            disabled={isReordering}
+            className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4"
+          >
+            {(skill, dragHandle) => (
               <SkillCard
-                key={skill.id}
                 skill={skill}
                 isEditing={editingId === skill.id}
                 isDeleting={deletingId === skill.id}
+                isTogglingFeatured={togglingId === skill.id}
+                dragHandle={dragHandle}
                 onEdit={handleEdit}
                 onDelete={handleDelete}
+                onToggleFeatured={handleToggleFeatured}
               />
-            ))}
-          </div>
+            )}
+          </SortableGrid>
         )}
       </div>
     </section>
@@ -413,23 +446,40 @@ interface SkillCardProps {
   skill: Skill;
   isEditing: boolean;
   isDeleting: boolean;
+  isTogglingFeatured: boolean;
+  dragHandle: ReactNode;
   onEdit: (skill: Skill) => void;
   onDelete: (id: number) => void;
+  onToggleFeatured: (skill: Skill) => void;
 }
 
 const cardActionClass =
   'flex size-8 items-center justify-center rounded-md transition focus-visible:outline-2 focus-visible:outline-offset-2 disabled:cursor-not-allowed disabled:opacity-50';
 
-function SkillCard({ skill, isEditing, isDeleting, onEdit, onDelete }: SkillCardProps) {
+function SkillCard({
+  skill,
+  isEditing,
+  isDeleting,
+  isTogglingFeatured,
+  dragHandle,
+  onEdit,
+  onDelete,
+  onToggleFeatured,
+}: SkillCardProps) {
   const accent = getSkillColor(skill);
 
   return (
     <article
-      className={`flex items-center gap-4 rounded-xl border border-l-4 bg-slate-800/50 p-4 shadow-lg shadow-black/20 transition ${
-        isEditing ? 'border-emerald-500/50 ring-1 ring-emerald-500/30' : 'border-slate-800 hover:border-slate-700'
+      className={`flex h-full items-center gap-3 rounded-xl border border-l-4 bg-slate-800/50 py-4 pr-4 pl-2 transition ${
+        isEditing
+          ? 'border-emerald-500/50 ring-1 ring-emerald-500/30 shadow-lg shadow-black/20'
+          : skill.isFeatured
+            ? FEATURED_CARD_CLASS
+            : 'border-slate-800 shadow-lg shadow-black/20 hover:border-slate-700'
       } ${isDeleting ? 'opacity-60' : ''}`}
       style={{ borderLeftColor: accent }}
     >
+      {dragHandle}
       <div
         className="flex size-12 shrink-0 items-center justify-center overflow-hidden rounded-lg text-lg font-bold"
         style={{ backgroundColor: `${accent}1a`, color: accent }}
@@ -444,7 +494,9 @@ function SkillCard({ skill, isEditing, isDeleting, onEdit, onDelete }: SkillCard
       <div className="min-w-0 flex-1">
         <div className="flex items-center gap-2">
           <h4 className="truncate text-base font-semibold text-slate-100">{skill.name}</h4>
-          {skill.isFeatured && <span className="text-amber-400" title="Destacada">★</span>}
+          {skill.isFeatured && (
+            <span className="shrink-0 rounded-full bg-emerald-500 px-2 py-0.5 text-[10px] font-semibold text-slate-950">Destacado</span>
+          )}
         </div>
         <div className="mt-1.5 flex flex-wrap gap-1.5">
           <span className="rounded-full bg-slate-700/60 px-2.5 py-0.5 text-xs font-medium text-slate-300">
@@ -462,6 +514,7 @@ function SkillCard({ skill, isEditing, isDeleting, onEdit, onDelete }: SkillCard
       </div>
 
       <div className="flex shrink-0 flex-col gap-1">
+        <FeaturedToggle isFeatured={skill.isFeatured} isLoading={isTogglingFeatured} onToggle={() => onToggleFeatured(skill)} />
         <button
           type="button"
           onClick={() => onEdit(skill)}

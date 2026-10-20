@@ -27,9 +27,9 @@ export default function PublicLayout() {
   const year = new Date().getFullYear();
 
   return (
-    <div className="flex min-h-screen flex-col bg-slate-950 text-slate-100 antialiased">
+    <div className="flex min-h-screen flex-col overflow-x-clip bg-slate-950 text-slate-100 antialiased">
       <header className="sticky top-0 z-50 border-b border-slate-800/60 bg-slate-950/70 backdrop-blur-lg">
-        <nav className="mx-auto flex h-16 max-w-6xl items-center justify-between px-6">
+        <nav className="mx-auto flex h-16 max-w-6xl items-center justify-between px-4 sm:px-6">
           <Link to="/" className="group flex items-center gap-2 text-lg font-bold tracking-tight">
             <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-linear-to-br from-emerald-400 to-cyan-500 text-sm font-black text-slate-950">
               JC
@@ -81,7 +81,7 @@ export default function PublicLayout() {
         </nav>
 
         {menuOpen && (
-          <ul className="flex flex-col gap-1 border-t border-slate-800/60 px-6 py-4 md:hidden">
+          <ul className="flex flex-col gap-1 max-h-[calc(100svh-4rem)] overflow-y-auto border-t border-slate-800/60 px-4 py-4 sm:px-6 md:hidden">
             {navItems.map(({ href, label }) => (
               <li key={href}>
                 <a
@@ -112,8 +112,8 @@ export default function PublicLayout() {
       </main>
 
       <footer className="border-t border-slate-800/60 bg-slate-950">
-        <div className="mx-auto flex max-w-6xl flex-col items-center justify-between gap-4 px-6 py-8 sm:flex-row">
-          <p className="text-sm text-slate-500">
+        <div className="mx-auto flex max-w-6xl flex-col items-center justify-between gap-4 px-4 py-8 sm:flex-row sm:px-6">
+          <p className="text-center text-sm text-slate-500 sm:text-left">
             © {year} Juan Camilo López Marín. Todos los derechos reservados.
           </p>
 

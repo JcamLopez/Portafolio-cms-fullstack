@@ -13,6 +13,12 @@ export type ExperienceInput = Omit<
 const isNotFoundError = (error: unknown) =>
   error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2025';
 
+// Siguiente posición libre: los registros nuevos se añaden al final del orden manual
+const nextOrder = async (): Promise<number> => {
+  const { _max } = await prisma.experience.aggregate({ _max: { order: true } });
+  return (_max.order ?? -1) + 1;
+};
+
 // Prisma no acepta `null` literal en columnas Json: hay que usar Prisma.DbNull
 const toPrismaData = ({ highlights, ...rest }: ExperienceInput) => ({
   ...rest,
@@ -20,12 +26,12 @@ const toPrismaData = ({ highlights, ...rest }: ExperienceInput) => ({
 });
 
 /**
- * Obtiene todas las experiencias: por prioridad manual (`order` asc), luego el
- * trabajo actual primero (isCurrent desc) y por último las más recientes (startDate desc).
+ * Obtiene las experiencias en el orden manual definido desde el admin (`order` asc).
+ * A igual `order`, por id para que el resultado sea estable.
  */
 export const getAllExperiences = async (): Promise<Experience[]> => {
   return prisma.experience.findMany({
-    orderBy: [{ order: 'asc' }, { isCurrent: 'desc' }, { startDate: 'desc' }],
+    orderBy: [{ order: 'asc' }, { id: 'asc' }],
   });
 };
 
@@ -37,10 +43,12 @@ export const getExperienceById = async (id: number): Promise<Experience | null> 
 };
 
 /**
- * Crea una experiencia.
+ * Crea una experiencia; si no trae `order`, se añade al final.
  */
 export const createExperience = async (data: ExperienceInput): Promise<Experience> => {
-  return prisma.experience.create({ data: toPrismaData(data) });
+  return prisma.experience.create({
+    data: { ...toPrismaData(data), order: data.order ?? (await nextOrder()) },
+  });
 };
 
 /**
@@ -61,6 +69,34 @@ export const updateExperience = async (id: number, data: ExperienceInput): Promi
 export const deleteExperience = async (id: number): Promise<Experience | null> => {
   try {
     return await prisma.experience.delete({ where: { id } });
+  } catch (error) {
+    if (isNotFoundError(error)) return null;
+    throw error;
+  }
+};
+
+/**
+ * Guarda el orden manual (drag & drop): el índice de cada id en `ids` pasa a ser su `order`.
+ * Todo va en una transacción: si algún id no existe no se aplica ningún cambio y devuelve false.
+ */
+export const reorderExperiences = async (ids: number[]): Promise<boolean> => {
+  try {
+    await prisma.$transaction(
+      ids.map((id, index) => prisma.experience.update({ where: { id }, data: { order: index } })),
+    );
+    return true;
+  } catch (error) {
+    if (isNotFoundError(error)) return false;
+    throw error;
+  }
+};
+
+/**
+ * Activa o desactiva el estado destacado (o devuelve null si no existe).
+ */
+export const setExperienceFeatured = async (id: number, isFeatured: boolean): Promise<Experience | null> => {
+  try {
+    return await prisma.experience.update({ where: { id }, data: { isFeatured } });
   } catch (error) {
     if (isNotFoundError(error)) return null;
     throw error;

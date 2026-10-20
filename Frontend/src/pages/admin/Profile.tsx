@@ -64,7 +64,7 @@ function toProfileInput(form: ProfileFormState): ProfileInput {
 }
 
 const inputClass =
-  'block w-full rounded-lg border border-slate-700 bg-slate-950/60 px-3.5 py-2.5 text-sm text-slate-100 placeholder:text-slate-500 outline-none transition focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/30';
+  'block w-full min-w-0 rounded-lg border border-slate-700 bg-slate-950/60 px-3.5 py-2.5 text-sm text-slate-100 placeholder:text-slate-500 outline-none transition focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/30';
 const labelClass = 'mb-1.5 block text-sm font-medium text-slate-300';
 
 export default function Profile() {
@@ -152,7 +152,7 @@ export default function Profile() {
       </header>
 
       {isLoading ? (
-        <div className="space-y-5 rounded-xl border border-slate-800 bg-slate-800/50 p-6">
+        <div className="space-y-5 rounded-xl border border-slate-800 bg-slate-800/50 p-4 sm:p-6">
           {Array.from({ length: 4 }, (_, i) => (
             <div key={i} className="h-11 animate-pulse rounded-lg bg-slate-700/40" />
           ))}
@@ -162,7 +162,7 @@ export default function Profile() {
         <form
           onSubmit={handleSubmit}
           noValidate
-          className="rounded-xl border border-slate-800 bg-slate-800/50 p-6 shadow-lg shadow-black/20"
+          className="rounded-xl border border-slate-800 bg-slate-800/50 p-4 shadow-lg shadow-black/20 sm:p-6"
         >
           {isNew && (
             <div className="mb-5 rounded-lg border border-amber-500/30 bg-amber-500/10 px-4 py-3 text-sm text-amber-300">
@@ -180,7 +180,7 @@ export default function Profile() {
             </div>
           )}
 
-          <div className="grid gap-5 md:grid-cols-2">
+          <div className="grid grid-cols-1 gap-5 md:grid-cols-2">
             <div>
               <label htmlFor="fullName" className={labelClass}>
                 Nombre completo <span className="text-red-400">*</span>

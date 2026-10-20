@@ -69,3 +69,14 @@ export async function deleteProject(id: number): Promise<Project> {
   const { data } = await apiClient.delete<ApiSuccessResponse<Project>>(`/projects/${id}`);
   return data.data;
 }
+
+// Guarda el orden manual: `ids` en la nueva posición. Devuelve la lista ya reordenada
+export async function reorderProjects(ids: number[]): Promise<Project[]> {
+  const { data } = await apiClient.put<ApiSuccessResponse<Project[]>>('/projects/reorder', { ids });
+  return data.data;
+}
+
+export async function setProjectFeatured(id: number, isFeatured: boolean): Promise<Project> {
+  const { data } = await apiClient.patch<ApiSuccessResponse<Project>>(`/projects/${id}/featured`, { isFeatured });
+  return data.data;
+}

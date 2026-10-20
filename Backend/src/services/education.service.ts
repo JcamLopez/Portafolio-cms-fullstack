@@ -10,14 +10,19 @@ export type EducationInput = Omit<Prisma.EducationCreateInput, 'createdAt' | 'up
 const isNotFoundError = (error: unknown) =>
   error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2025';
 
+// Siguiente posición libre: los registros nuevos se añaden al final del orden manual
+const nextOrder = async (): Promise<number> => {
+  const { _max } = await prisma.education.aggregate({ _max: { order: true } });
+  return (_max.order ?? -1) + 1;
+};
+
 /**
- * Obtiene toda la formación: primero por prioridad manual (`order` asc, para destacar
- * el título principal) y luego la más reciente primero (endDate desc). Las que no
- * tienen fecha de fin (en curso) se tratan como las más recientes.
+ * Obtiene toda la formación en el orden manual definido desde el admin (`order` asc).
+ * A igual `order`, por id para que el resultado sea estable.
  */
 export const getAllEducations = async (): Promise<Education[]> => {
   return prisma.education.findMany({
-    orderBy: [{ order: 'asc' }, { endDate: { sort: 'desc', nulls: 'first' } }],
+    orderBy: [{ order: 'asc' }, { id: 'asc' }],
   });
 };
 
@@ -29,10 +34,10 @@ export const getEducationById = async (id: number): Promise<Education | null> =>
 };
 
 /**
- * Crea una formación.
+ * Crea una formación; si no trae `order`, se añade al final.
  */
 export const createEducation = async (data: EducationInput): Promise<Education> => {
-  return prisma.education.create({ data });
+  return prisma.education.create({ data: { ...data, order: data.order ?? (await nextOrder()) } });
 };
 
 /**
@@ -53,6 +58,34 @@ export const updateEducation = async (id: number, data: EducationInput): Promise
 export const deleteEducation = async (id: number): Promise<Education | null> => {
   try {
     return await prisma.education.delete({ where: { id } });
+  } catch (error) {
+    if (isNotFoundError(error)) return null;
+    throw error;
+  }
+};
+
+/**
+ * Guarda el orden manual (drag & drop): el índice de cada id en `ids` pasa a ser su `order`.
+ * Todo va en una transacción: si algún id no existe no se aplica ningún cambio y devuelve false.
+ */
+export const reorderEducations = async (ids: number[]): Promise<boolean> => {
+  try {
+    await prisma.$transaction(
+      ids.map((id, index) => prisma.education.update({ where: { id }, data: { order: index } })),
+    );
+    return true;
+  } catch (error) {
+    if (isNotFoundError(error)) return false;
+    throw error;
+  }
+};
+
+/**
+ * Activa o desactiva el estado destacado (o devuelve null si no existe).
+ */
+export const setEducationFeatured = async (id: number, isFeatured: boolean): Promise<Education | null> => {
+  try {
+    return await prisma.education.update({ where: { id }, data: { isFeatured } });
   } catch (error) {
     if (isNotFoundError(error)) return null;
     throw error;
