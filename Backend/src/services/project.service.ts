@@ -13,13 +13,19 @@ export type ProjectInput = Omit<
 const isNotFoundError = (error: unknown) =>
   error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2025';
 
+// Siguiente posición libre: los registros nuevos se añaden al final del orden manual
+const nextOrder = async (): Promise<number> => {
+  const { _max } = await prisma.project.aggregate({ _max: { order: true } });
+  return (_max.order ?? -1) + 1;
+};
+
 /**
- * Obtiene todos los proyectos ordenados por `order` (asc) y, a igual orden,
- * por fecha de creación (más recientes primero).
+ * Obtiene los proyectos en el orden manual definido desde el admin (`order` asc).
+ * A igual `order`, por id para que el resultado sea estable.
  */
 export const getAllProjects = async (): Promise<Project[]> => {
   return prisma.project.findMany({
-    orderBy: [{ order: 'asc' }, { createdAt: 'desc' }],
+    orderBy: [{ order: 'asc' }, { id: 'asc' }],
   });
 };
 
@@ -53,12 +59,13 @@ export const getProjectBySlug = async (slug: string): Promise<ProjectWithSkills 
 };
 
 /**
- * Crea un proyecto. Si nace publicado, se fija publishedAt a la fecha actual.
+ * Crea un proyecto (al final del orden si no trae `order`). Si nace publicado, se fija publishedAt a la fecha actual.
  */
 export const createProject = async (data: ProjectInput): Promise<Project> => {
   return prisma.project.create({
     data: {
       ...data,
+      order: data.order ?? (await nextOrder()),
       publishedAt: data.isPublished ? new Date() : null,
     },
   });
@@ -99,6 +106,34 @@ export const updateProject = async (id: number, data: ProjectInput): Promise<Pro
 export const deleteProject = async (id: number): Promise<Project | null> => {
   try {
     return await prisma.project.delete({ where: { id } });
+  } catch (error) {
+    if (isNotFoundError(error)) return null;
+    throw error;
+  }
+};
+
+/**
+ * Guarda el orden manual (drag & drop): el índice de cada id en `ids` pasa a ser su `order`.
+ * Todo va en una transacción: si algún id no existe no se aplica ningún cambio y devuelve false.
+ */
+export const reorderProjects = async (ids: number[]): Promise<boolean> => {
+  try {
+    await prisma.$transaction(
+      ids.map((id, index) => prisma.project.update({ where: { id }, data: { order: index } })),
+    );
+    return true;
+  } catch (error) {
+    if (isNotFoundError(error)) return false;
+    throw error;
+  }
+};
+
+/**
+ * Activa o desactiva el estado destacado (o devuelve null si no existe).
+ */
+export const setProjectFeatured = async (id: number, isFeatured: boolean): Promise<Project | null> => {
+  try {
+    return await prisma.project.update({ where: { id }, data: { isFeatured } });
   } catch (error) {
     if (isNotFoundError(error)) return null;
     throw error;

@@ -21,6 +21,7 @@ export interface Experience {
   highlights: string[] | null;
   companyUrl: string | null;
   logoUrl: string | null;
+  isFeatured: boolean;
   order: number;
   createdAt: string;
   updatedAt: string;
@@ -40,6 +41,7 @@ export interface ExperienceInput {
   location?: string | null;
   companyUrl?: string | null;
   logoUrl?: string | null;
+  isFeatured?: boolean;
   highlights?: string[] | null;
   order?: number;
 }
@@ -68,5 +70,16 @@ export async function updateExperience(id: number, input: ExperienceInput): Prom
 
 export async function deleteExperience(id: number): Promise<Experience> {
   const { data } = await apiClient.delete<ApiSuccessResponse<Experience>>(`/experience/${id}`);
+  return data.data;
+}
+
+// Guarda el orden manual: `ids` en la nueva posición. Devuelve la lista ya reordenada
+export async function reorderExperiences(ids: number[]): Promise<Experience[]> {
+  const { data } = await apiClient.put<ApiSuccessResponse<Experience[]>>('/experience/reorder', { ids });
+  return data.data;
+}
+
+export async function setExperienceFeatured(id: number, isFeatured: boolean): Promise<Experience> {
+  const { data } = await apiClient.patch<ApiSuccessResponse<Experience>>(`/experience/${id}/featured`, { isFeatured });
   return data.data;
 }

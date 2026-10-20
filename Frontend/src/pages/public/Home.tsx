@@ -11,6 +11,7 @@ import {
 import { getProfile, type Profile } from '../../api/profileService';
 import { getProjects, type Project } from '../../api/projectsService';
 import { getSkillColor, getSkills, type Skill, type SkillCategory, type SkillLevel } from '../../api/skillsService';
+import { FEATURED_CARD_CLASS } from '../../styles/featured';
 
 const CATEGORY_LABELS: Record<SkillCategory, string> = {
   LANGUAGE: 'Lenguaje',
@@ -81,7 +82,33 @@ function formatPeriod({ startDate, endDate, isCurrent }: Period): string | null 
   return end ? `${start} — ${end}` : start;
 }
 
-const byOrder = <T extends { order: number }>(a: T, b: T) => a.order - b.order;
+// Hover de las tarjetas no destacadas; las destacadas conservan su resplandor (ver FEATURED_CARD_CLASS)
+const DEFAULT_CARD_CLASS = `border-slate-800 hover:border-emerald-500/40 hover:shadow-xl hover:shadow-emerald-500/5`;
+
+function FeaturedBadge({ label = 'Destacado', className = '' }: { label?: string; className?: string }) {
+  return (
+    <span
+      className={`inline-flex items-center gap-1 rounded-full bg-emerald-500 px-2.5 py-0.5 text-xs font-semibold text-slate-950 shadow-sm shadow-emerald-500/30 ${className}`}
+    >
+      <svg viewBox="0 0 24 24" fill="currentColor" className="h-3 w-3" aria-hidden="true">
+        <path d="m12 3 2.8 5.7 6.2.9-4.5 4.4 1.1 6.2L12 17.3l-5.6 2.9 1.1-6.2L3 9.6l6.2-.9Z" />
+      </svg>
+      {label}
+    </span>
+  );
+}
+
+// Punto de la línea de tiempo: verde brillante si está destacado
+function TimelineDot({ isFeatured }: { isFeatured: boolean }) {
+  return (
+    <span
+      aria-hidden="true"
+      className={`absolute top-7 left-[-2.97rem] hidden h-3.5 w-3.5 rounded-full border-2 border-slate-950 sm:block ${
+        isFeatured ? 'bg-emerald-400 ring-4 ring-emerald-400/20' : 'bg-slate-600'
+      }`}
+    />
+  );
+}
 
 export default function Home() {
   const [profile, setProfile] = useState<Profile | null>(null);
@@ -101,14 +128,10 @@ export default function Home() {
       .then(([profileData, projectsData, skillsData, educationsData, experiencesData]) => {
         if (cancelled) return;
         setProfile(profileData);
-        // Solo se muestran los proyectos publicados; los destacados primero
-        setProjects(
-          projectsData
-            .filter((project) => project.isPublished)
-            .sort((a, b) => Number(b.isFeatured) - Number(a.isFeatured) || byOrder(a, b)),
-        );
-        setSkills([...skillsData].sort(byOrder));
-        // El backend ya las devuelve de la más reciente a la más antigua
+        // Todo llega en el orden manual definido en el admin (order asc): aquí no se reordena nada.
+        // Solo se muestran los proyectos publicados
+        setProjects(projectsData.filter((project) => project.isPublished));
+        setSkills(skillsData);
         setEducations(educationsData);
         setExperiences(experiencesData);
       })
@@ -143,12 +166,12 @@ export default function Home() {
           <div className="absolute top-20 right-0 h-72 w-72 rounded-full bg-cyan-500/10 blur-3xl" />
         </div>
 
-        <div className="relative mx-auto flex min-h-[calc(100vh-4rem)] max-w-6xl flex-col justify-center px-6 py-24">
+        <div className="relative mx-auto flex min-h-[calc(100svh-4rem)] max-w-6xl flex-col justify-center px-4 py-16 sm:px-6 sm:py-24">
           {isLoading ? (
             <HeroSkeleton />
           ) : (
-            <div className="grid items-center gap-12 lg:grid-cols-[1fr_auto] lg:gap-16">
-              <div className="order-2 lg:order-1">
+            <div className="grid grid-cols-1 items-center gap-10 sm:gap-12 lg:grid-cols-[1fr_auto] lg:gap-16">
+              <div className="order-2 min-w-0 lg:order-1">
                 <div className="mb-6 flex flex-wrap items-center gap-3">
                   {profile?.availableForWork && (
                     <span className="inline-flex items-center gap-2 rounded-full border border-emerald-500/30 bg-emerald-500/10 px-4 py-1.5 text-xs font-medium text-emerald-300">
@@ -167,7 +190,7 @@ export default function Home() {
                   )}
                 </div>
 
-                <h1 className="max-w-4xl text-4xl font-extrabold leading-tight tracking-tight sm:text-6xl">
+                <h1 className="max-w-4xl text-3xl font-extrabold leading-tight tracking-tight wrap-break-word sm:text-5xl lg:text-6xl">
                   Hola, soy{' '}
                   <span className="bg-linear-to-r from-emerald-400 via-teal-300 to-cyan-400 bg-clip-text text-transparent">
                     {profile?.fullName ?? 'Juan Camilo López Marín'}
@@ -175,25 +198,25 @@ export default function Home() {
                 </h1>
 
                 {profile?.headline && (
-                  <p className="mt-4 text-xl font-semibold text-slate-200 sm:text-2xl">{profile.headline}</p>
+                  <p className="mt-4 text-lg font-semibold text-slate-200 sm:text-xl md:text-2xl">{profile.headline}</p>
                 )}
 
                 {(profile?.bio || profile?.subheadline) && (
-                  <p className="mt-6 max-w-2xl whitespace-pre-line text-lg leading-relaxed text-slate-400">
+                  <p className="mt-6 max-w-2xl whitespace-pre-line text-base leading-relaxed sm:text-lg text-slate-400">
                     {profile.bio || profile.subheadline}
                   </p>
                 )}
 
-                <div className="mt-10 flex flex-wrap gap-4">
+                <div className="mt-8 flex flex-col gap-3 sm:mt-10 sm:flex-row sm:flex-wrap sm:gap-4">
                   <a
                     href="#proyectos"
-                    className="rounded-lg bg-emerald-500 px-6 py-3 text-sm font-semibold text-slate-950 shadow-lg shadow-emerald-500/20 transition-all hover:-translate-y-0.5 hover:bg-emerald-400"
+                    className="rounded-lg bg-emerald-500 px-6 py-3 text-center text-sm font-semibold text-slate-950 shadow-lg shadow-emerald-500/20 transition-all hover:-translate-y-0.5 hover:bg-emerald-400"
                   >
                     Ver proyectos
                   </a>
                   <a
                     href="#habilidades"
-                    className="rounded-lg border border-slate-700 px-6 py-3 text-sm font-semibold text-slate-200 transition-all hover:-translate-y-0.5 hover:border-emerald-400 hover:text-emerald-400"
+                    className="rounded-lg border border-slate-700 px-6 py-3 text-center text-sm font-semibold text-slate-200 transition-all hover:-translate-y-0.5 hover:border-emerald-400 hover:text-emerald-400"
                   >
                     Mis habilidades
                   </a>
@@ -202,7 +225,7 @@ export default function Home() {
                       href={profile.resumeUrl}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="inline-flex items-center gap-2 rounded-lg border border-cyan-500/40 bg-cyan-500/10 px-6 py-3 text-sm font-semibold text-cyan-300 transition-all hover:-translate-y-0.5 hover:border-cyan-400 hover:bg-cyan-500/20"
+                      className="inline-flex items-center justify-center gap-2 rounded-lg border border-cyan-500/40 bg-cyan-500/10 px-6 py-3 text-sm font-semibold text-cyan-300 transition-all hover:-translate-y-0.5 hover:border-cyan-400 hover:bg-cyan-500/20"
                     >
                       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} className="h-4 w-4" aria-hidden="true">
                         <path strokeLinecap="round" strokeLinejoin="round" d="M12 4v11m0 0-4-4m4 4 4-4M5 19h14" />
@@ -220,7 +243,7 @@ export default function Home() {
                     <img
                       src={profile.avatarUrl}
                       alt={profile.fullName}
-                      className="relative h-48 w-48 rounded-4xl border border-slate-700/60 object-cover shadow-2xl shadow-emerald-500/10 ring-1 ring-emerald-400/20 sm:h-64 sm:w-64 lg:h-80 lg:w-80"
+                      className="relative h-40 w-40 rounded-4xl border border-slate-700/60 object-cover shadow-2xl shadow-emerald-500/10 ring-1 ring-emerald-400/20 sm:h-64 sm:w-64 lg:h-80 lg:w-80"
                     />
                   </div>
                 </div>
@@ -231,7 +254,7 @@ export default function Home() {
       </section>
 
       {error && (
-        <div className="mx-auto max-w-6xl px-6">
+        <div className="mx-auto max-w-6xl px-4 sm:px-6">
           <div className="rounded-lg border border-red-500/40 bg-red-500/10 px-4 py-3 text-sm text-red-300">
             {error}
           </div>
@@ -239,12 +262,12 @@ export default function Home() {
       )}
 
       {/* Proyectos */}
-      <section id="proyectos" className="scroll-mt-16 py-24">
-        <div className="mx-auto max-w-6xl px-6">
+      <section id="proyectos" className="scroll-mt-16 py-16 sm:py-24">
+        <div className="mx-auto max-w-6xl px-4 sm:px-6">
           <SectionHeading eyebrow="Portafolio" title="Proyectos destacados" />
 
           {isLoading ? (
-            <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+            <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
               {Array.from({ length: 3 }, (_, i) => (
                 <div key={i} className="h-80 animate-pulse rounded-2xl bg-slate-900" />
               ))}
@@ -252,7 +275,7 @@ export default function Home() {
           ) : projects.length === 0 ? (
             <EmptyState text="Pronto habrá proyectos por aquí." />
           ) : (
-            <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+            <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
               {projects.map((project) => (
                 <ProjectCard key={project.id} project={project} />
               ))}
@@ -262,12 +285,12 @@ export default function Home() {
       </section>
 
       {/* Habilidades */}
-      <section id="habilidades" className="scroll-mt-16 border-t border-slate-800/60 bg-slate-900/30 py-24">
-        <div className="mx-auto max-w-6xl px-6">
+      <section id="habilidades" className="scroll-mt-16 border-t border-slate-800/60 bg-slate-900/30 py-16 sm:py-24">
+        <div className="mx-auto max-w-6xl px-4 sm:px-6">
           <SectionHeading eyebrow="Stack" title="Habilidades" />
 
           {isLoading ? (
-            <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4">
+            <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 sm:gap-4 lg:grid-cols-4">
               {Array.from({ length: 8 }, (_, i) => (
                 <div key={i} className="h-24 animate-pulse rounded-xl bg-slate-900" />
               ))}
@@ -275,7 +298,7 @@ export default function Home() {
           ) : skills.length === 0 ? (
             <EmptyState text="Pronto habrá habilidades por aquí." />
           ) : (
-            <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4">
+            <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 sm:gap-4 lg:grid-cols-4">
               {skills.map((skill) => (
                 <SkillCard key={skill.id} skill={skill} />
               ))}
@@ -285,8 +308,8 @@ export default function Home() {
       </section>
 
       {/* Experiencia */}
-      <section id="experiencia" className="scroll-mt-16 border-t border-slate-800/60 py-24">
-        <div className="mx-auto max-w-6xl px-6">
+      <section id="experiencia" className="scroll-mt-16 border-t border-slate-800/60 py-16 sm:py-24">
+        <div className="mx-auto max-w-6xl px-4 sm:px-6">
           <SectionHeading eyebrow="Carrera" title="Experiencia Laboral" />
 
           {isLoading ? (
@@ -308,8 +331,8 @@ export default function Home() {
       </section>
 
       {/* Educación */}
-      <section id="educacion" className="scroll-mt-16 border-t border-slate-800/60 bg-slate-900/30 py-24">
-        <div className="mx-auto max-w-6xl px-6">
+      <section id="educacion" className="scroll-mt-16 border-t border-slate-800/60 bg-slate-900/30 py-16 sm:py-24">
+        <div className="mx-auto max-w-6xl px-4 sm:px-6">
           <SectionHeading eyebrow="Trayectoria" title="Formación Académica" />
 
           {isLoading ? (
@@ -332,12 +355,12 @@ export default function Home() {
 
       {/* Contacto */}
       {(isLoading || profile?.email || profile?.phone) && (
-        <section id="contacto" className="scroll-mt-16 border-t border-slate-800/60 py-24">
-          <div className="mx-auto max-w-6xl px-6">
+        <section id="contacto" className="scroll-mt-16 border-t border-slate-800/60 py-16 sm:py-24">
+          <div className="mx-auto max-w-6xl px-4 sm:px-6">
             <SectionHeading eyebrow="Hablemos" title="Contacto" />
 
             {isLoading ? (
-              <div className="grid gap-4 sm:grid-cols-2">
+              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                 {Array.from({ length: 2 }, (_, i) => (
                   <div key={i} className="h-20 animate-pulse rounded-2xl bg-slate-900" />
                 ))}
@@ -347,7 +370,7 @@ export default function Home() {
                 <p className="mb-8 max-w-2xl text-slate-400">
                   ¿Tienes un proyecto en mente o quieres conversar? Escríbeme o llámame directamente.
                 </p>
-                <div className="grid gap-4 sm:grid-cols-2">
+                <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                   {profile?.email && (
                     <ContactLink
                       href={`mailto:${profile.email}`}
@@ -414,7 +437,7 @@ function ContactLink({
       href={href}
       onClick={onClick}
       {...(external && { target: '_blank', rel: 'noopener noreferrer' })}
-      className="group flex cursor-pointer items-center gap-4 rounded-2xl border border-slate-800 bg-slate-900/60 p-5 transition-all duration-200 hover:scale-105 hover:border-emerald-500/50 hover:shadow-xl hover:shadow-emerald-500/5"
+      className="group flex cursor-pointer items-center gap-4 rounded-2xl border border-slate-800 bg-slate-900/60 p-4 transition-all duration-200 sm:p-5 sm:hover:scale-105 hover:border-emerald-500/50 hover:shadow-xl hover:shadow-emerald-500/5"
     >
       <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl border border-emerald-500/20 bg-emerald-500/10 text-emerald-400 transition-colors group-hover:bg-emerald-500 group-hover:text-slate-950">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} className="h-5 w-5" aria-hidden="true">
@@ -436,7 +459,7 @@ function ContactLink({
 
 function HeroSkeleton() {
   return (
-    <div className="grid animate-pulse items-center gap-12 lg:grid-cols-[1fr_auto] lg:gap-16">
+    <div className="grid animate-pulse grid-cols-1 items-center gap-10 sm:gap-12 lg:grid-cols-[1fr_auto] lg:gap-16">
       <div className="order-2 space-y-6 lg:order-1">
         <div className="h-7 w-56 rounded-full bg-slate-800" />
         <div className="h-14 w-full max-w-2xl rounded-lg bg-slate-800" />
@@ -451,7 +474,7 @@ function HeroSkeleton() {
         </div>
       </div>
       <div className="order-1 flex justify-center lg:order-2">
-        <div className="h-48 w-48 rounded-4xl bg-slate-800 sm:h-64 sm:w-64 lg:h-80 lg:w-80" />
+        <div className="h-40 w-40 rounded-4xl bg-slate-800 sm:h-64 sm:w-64 lg:h-80 lg:w-80" />
       </div>
     </div>
   );
@@ -459,9 +482,9 @@ function HeroSkeleton() {
 
 function SectionHeading({ eyebrow, title }: { eyebrow: string; title: string }) {
   return (
-    <div className="mb-12">
+    <div className="mb-8 sm:mb-12">
       <p className="text-sm font-semibold uppercase tracking-widest text-emerald-400">{eyebrow}</p>
-      <h2 className="mt-2 text-3xl font-bold tracking-tight text-slate-100 sm:text-4xl">{title}</h2>
+      <h2 className="mt-2 text-2xl font-bold tracking-tight text-slate-100 sm:text-3xl md:text-4xl">{title}</h2>
     </div>
   );
 }
@@ -476,7 +499,11 @@ function ProjectCard({ project }: { project: Project }) {
   const detailPath = `/proyectos/${project.slug}`;
 
   return (
-    <article className="group flex flex-col overflow-hidden rounded-2xl border border-slate-800 bg-slate-900/60 transition-all hover:-translate-y-1 hover:border-emerald-500/40 hover:shadow-xl hover:shadow-emerald-500/5">
+    <article
+      className={`group flex flex-col overflow-hidden rounded-2xl border bg-slate-900/60 transition-all hover:-translate-y-1 ${
+        project.isFeatured ? FEATURED_CARD_CLASS : DEFAULT_CARD_CLASS
+      }`}
+    >
       {/* Solo la portada y el título enlazan al detalle; los botones externos quedan fuera para evitar enlaces anidados */}
       <Link
         to={detailPath}
@@ -496,15 +523,11 @@ function ProjectCard({ project }: { project: Project }) {
             {project.title.charAt(0).toUpperCase()}
           </div>
         )}
-        {project.isFeatured && (
-          <span className="absolute top-3 left-3 rounded-full bg-emerald-500 px-3 py-1 text-xs font-semibold text-slate-950">
-            Destacado
-          </span>
-        )}
+        {project.isFeatured && <FeaturedBadge className="absolute top-3 left-3" />}
       </Link>
 
-      <div className="flex flex-1 flex-col p-6">
-        <h3 className="text-lg font-semibold text-slate-100">
+      <div className="flex flex-1 flex-col p-5 sm:p-6">
+        <h3 className="text-lg font-semibold wrap-break-word text-slate-100">
           <Link
             to={detailPath}
             className="underline-offset-4 transition-colors hover:text-emerald-400 hover:underline focus-visible:text-emerald-400 focus-visible:underline focus-visible:outline-none"
@@ -559,7 +582,12 @@ function SkillCard({ skill }: { skill: Skill }) {
   const accent = getSkillColor(skill);
 
   return (
-    <div className="group flex flex-col gap-3 rounded-xl border border-slate-800 bg-slate-900/60 p-4 transition-all hover:-translate-y-0.5 hover:border-slate-700">
+    <div
+      className={`group relative flex flex-col gap-3 rounded-xl border bg-slate-900/60 p-3 transition-all sm:p-4 hover:-translate-y-0.5 ${
+        skill.isFeatured ? FEATURED_CARD_CLASS : 'border-slate-800 hover:border-slate-700'
+      }`}
+    >
+      {skill.isFeatured && <FeaturedBadge className="absolute -top-2.5 right-3" />}
       <div className="flex items-center gap-3">
         {skill.iconUrl ? (
           <img src={skill.iconUrl} alt="" loading="lazy" className="h-8 w-8 shrink-0 object-contain" />
@@ -597,15 +625,13 @@ function EducationItem({ education }: { education: Education }) {
 
   return (
     <li className="relative">
-      {/* Punto de la línea de tiempo */}
-      <span
-        aria-hidden="true"
-        className={`absolute top-7 left-[-2.97rem] hidden h-3.5 w-3.5 rounded-full border-2 border-slate-950 sm:block ${
-          education.isCurrent ? 'bg-emerald-400 ring-4 ring-emerald-400/20' : 'bg-slate-600'
-        }`}
-      />
+      <TimelineDot isFeatured={education.isFeatured} />
 
-      <article className="group rounded-2xl border border-slate-800 bg-slate-900/60 p-6 transition-all hover:-translate-y-0.5 hover:border-emerald-500/40 hover:shadow-xl hover:shadow-emerald-500/5">
+      <article
+        className={`group rounded-2xl border bg-slate-900/60 p-4 transition-all sm:p-6 hover:-translate-y-0.5 ${
+          education.isFeatured ? FEATURED_CARD_CLASS : DEFAULT_CARD_CLASS
+        }`}
+      >
         <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
           <div className="flex min-w-0 items-start gap-4">
             {education.logoUrl && (
@@ -617,7 +643,10 @@ function EducationItem({ education }: { education: Education }) {
               />
             )}
             <div className="min-w-0">
-              <h3 className="text-lg font-semibold text-slate-100">{education.title}</h3>
+              <div className="flex flex-wrap items-center gap-2">
+                <h3 className="text-lg font-semibold wrap-break-word text-slate-100">{education.title}</h3>
+                {education.isFeatured && <FeaturedBadge label="Principal" />}
+              </div>
               <p className="mt-0.5 text-sm font-medium text-emerald-400">{education.institution}</p>
               <div className="mt-2 flex flex-wrap gap-1.5">
                 <span className="rounded-full bg-slate-800 px-2.5 py-0.5 text-xs font-medium text-slate-300">
@@ -672,15 +701,13 @@ function ExperienceItem({ experience }: { experience: Experience }) {
 
   return (
     <li className="relative">
-      {/* Punto de la línea de tiempo */}
-      <span
-        aria-hidden="true"
-        className={`absolute top-7 left-[-2.97rem] hidden h-3.5 w-3.5 rounded-full border-2 border-slate-950 sm:block ${
-          experience.isCurrent ? 'bg-emerald-400 ring-4 ring-emerald-400/20' : 'bg-slate-600'
-        }`}
-      />
+      <TimelineDot isFeatured={experience.isFeatured} />
 
-      <article className="group rounded-2xl border border-slate-800 bg-slate-900/60 p-6 transition-all hover:-translate-y-0.5 hover:border-emerald-500/40 hover:shadow-xl hover:shadow-emerald-500/5">
+      <article
+        className={`group rounded-2xl border bg-slate-900/60 p-4 transition-all sm:p-6 hover:-translate-y-0.5 ${
+          experience.isFeatured ? FEATURED_CARD_CLASS : DEFAULT_CARD_CLASS
+        }`}
+      >
         <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
           <div className="flex min-w-0 items-start gap-4">
             {experience.logoUrl && (
@@ -692,7 +719,10 @@ function ExperienceItem({ experience }: { experience: Experience }) {
               />
             )}
             <div className="min-w-0">
-              <h3 className="text-lg font-semibold text-slate-100">{experience.role}</h3>
+              <div className="flex flex-wrap items-center gap-2">
+                <h3 className="text-lg font-semibold wrap-break-word text-slate-100">{experience.role}</h3>
+                {experience.isFeatured && <FeaturedBadge />}
+              </div>
               {experience.companyUrl ? (
                 <a
                   href={experience.companyUrl}

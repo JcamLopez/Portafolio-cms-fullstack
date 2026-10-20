@@ -16,6 +16,7 @@ export interface Education {
   description: string | null;
   credentialUrl: string | null;
   logoUrl: string | null;
+  isFeatured: boolean;
   order: number;
   createdAt: string;
   updatedAt: string;
@@ -34,6 +35,7 @@ export interface EducationInput {
   description?: string | null;
   credentialUrl?: string | null;
   logoUrl?: string | null;
+  isFeatured?: boolean;
   order?: number;
 }
 
@@ -61,5 +63,16 @@ export async function updateEducation(id: number, input: EducationInput): Promis
 
 export async function deleteEducation(id: number): Promise<Education> {
   const { data } = await apiClient.delete<ApiSuccessResponse<Education>>(`/education/${id}`);
+  return data.data;
+}
+
+// Guarda el orden manual: `ids` en la nueva posición. Devuelve la lista ya reordenada
+export async function reorderEducations(ids: number[]): Promise<Education[]> {
+  const { data } = await apiClient.put<ApiSuccessResponse<Education[]>>('/education/reorder', { ids });
+  return data.data;
+}
+
+export async function setEducationFeatured(id: number, isFeatured: boolean): Promise<Education> {
+  const { data } = await apiClient.patch<ApiSuccessResponse<Education>>(`/education/${id}/featured`, { isFeatured });
   return data.data;
 }

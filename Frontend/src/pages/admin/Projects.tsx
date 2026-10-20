@@ -1,13 +1,19 @@
-import { useEffect, useRef, useState, type ChangeEvent, type SubmitEvent } from 'react';
+import { useEffect, useRef, useState, type ChangeEvent, type ReactNode, type SubmitEvent } from 'react';
 import { getApiErrorMessage } from '../../api/client';
 import {
   createProject,
   deleteProject,
   getProjects,
+  reorderProjects,
+  setProjectFeatured,
   updateProject,
   type Project,
   type ProjectInput,
 } from '../../api/projectsService';
+import FeaturedToggle from '../../components/FeaturedToggle';
+import SortableGrid from '../../components/SortableGrid';
+import { useManualOrder } from '../../hooks/useManualOrder';
+import { FEATURED_CARD_CLASS } from '../../styles/featured';
 
 interface ProjectFormState {
   title: string;
@@ -74,7 +80,7 @@ function toFormState(project: Project): ProjectFormState {
 }
 
 const inputClass =
-  'block w-full rounded-lg border border-slate-700 bg-slate-950/60 px-3.5 py-2.5 text-sm text-slate-100 placeholder:text-slate-500 outline-none transition focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/30';
+  'block w-full min-w-0 rounded-lg border border-slate-700 bg-slate-950/60 px-3.5 py-2.5 text-sm text-slate-100 placeholder:text-slate-500 outline-none transition focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/30';
 const labelClass = 'mb-1.5 block text-sm font-medium text-slate-300';
 
 export default function Projects() {
@@ -91,6 +97,16 @@ export default function Projects() {
   const [editingId, setEditingId] = useState<number | null>(null);
   const [deletingId, setDeletingId] = useState<number | null>(null);
   const formRef = useRef<HTMLFormElement>(null);
+  const { reorder, toggleFeatured, isReordering, togglingId, actionError } = useManualOrder(projects, setProjects, {
+    reorder: reorderProjects,
+    setFeatured: setProjectFeatured,
+  });
+
+  // El formulario en edición también envía isFeatured: se mantiene sincronizado con la estrella
+  const handleToggleFeatured = async (project: Project) => {
+    const saved = await toggleFeatured(project);
+    if (saved && editingId === saved.id) setForm((prev) => ({ ...prev, isFeatured: saved.isFeatured }));
+  };
 
   const loadProjects = async () => {
     try {
@@ -195,7 +211,7 @@ export default function Projects() {
         setSuccessMessage(`Proyecto "${updated.title}" actualizado correctamente.`);
       } else {
         const created = await createProject(toProjectInput(form));
-        setProjects((prev) => [created, ...prev]);
+        setProjects((prev) => [...prev, created]);
         resetForm();
         setSuccessMessage(`Proyecto "${created.title}" creado correctamente.`);
       }
@@ -222,7 +238,7 @@ export default function Projects() {
         ref={formRef}
         onSubmit={handleSubmit}
         noValidate
-        className={`scroll-mt-6 rounded-xl border bg-slate-800/50 p-6 shadow-lg shadow-black/20 transition ${
+        className={`scroll-mt-20 rounded-xl border bg-slate-800/50 p-4 shadow-lg shadow-black/20 sm:p-6 transition ${
           isEditing ? 'border-emerald-500/40' : 'border-slate-800'
         }`}
       >
@@ -246,7 +262,7 @@ export default function Projects() {
           </div>
         )}
 
-        <div className="grid gap-5 md:grid-cols-2">
+        <div className="grid grid-cols-1 gap-5 md:grid-cols-2">
           <div>
             <label htmlFor="title" className={labelClass}>
               Título <span className="text-red-400">*</span>
@@ -338,13 +354,23 @@ export default function Projects() {
       </form>
 
       <div>
-        <div className="mb-4 flex items-baseline justify-between">
+        <div className="mb-4 flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1">
           <h3 className="text-lg font-semibold text-slate-100">Listado</h3>
-          {!isLoading && !loadError && <span className="text-sm text-slate-400">{projects.length} proyecto(s)</span>}
+          {!isLoading && !loadError && (
+            <span className="text-sm text-slate-400">
+              {isReordering ? 'Guardando orden…' : `${projects.length} proyecto(s) · arrastra ⠿ para ordenar`}
+            </span>
+          )}
         </div>
 
+        {actionError && (
+          <div role="alert" className="mb-4 rounded-lg border border-red-500/30 bg-red-500/10 px-4 py-3 text-sm text-red-300">
+            {actionError}
+          </div>
+        )}
+
         {isLoading ? (
-          <div className="grid gap-6 sm:grid-cols-2 xl:grid-cols-3">
+          <div className="grid grid-cols-1 gap-4 sm:gap-6 md:grid-cols-2 xl:grid-cols-3">
             {Array.from({ length: 3 }, (_, i) => (
               <div key={i} className="h-48 animate-pulse rounded-xl border border-slate-800 bg-slate-800/40" />
             ))}
@@ -358,18 +384,25 @@ export default function Projects() {
             Aún no hay proyectos. Crea el primero con el formulario de arriba.
           </div>
         ) : (
-          <div className="grid gap-6 sm:grid-cols-2 xl:grid-cols-3">
-            {projects.map((project) => (
+          <SortableGrid
+            items={projects}
+            onReorder={reorder}
+            disabled={isReordering}
+            className="grid grid-cols-1 gap-4 sm:gap-6 md:grid-cols-2 xl:grid-cols-3"
+          >
+            {(project, dragHandle) => (
               <ProjectCard
-                key={project.id}
                 project={project}
                 isEditing={editingId === project.id}
                 isDeleting={deletingId === project.id}
+                isTogglingFeatured={togglingId === project.id}
+                dragHandle={dragHandle}
                 onEdit={handleEdit}
                 onDelete={handleDelete}
+                onToggleFeatured={handleToggleFeatured}
               />
-            ))}
-          </div>
+            )}
+          </SortableGrid>
         )}
       </div>
     </section>
@@ -380,18 +413,34 @@ interface ProjectCardProps {
   project: Project;
   isEditing: boolean;
   isDeleting: boolean;
+  isTogglingFeatured: boolean;
+  dragHandle: ReactNode;
   onEdit: (project: Project) => void;
   onDelete: (id: number) => void;
+  onToggleFeatured: (project: Project) => void;
 }
 
 const cardActionClass =
   'flex items-center gap-1.5 rounded-md px-2.5 py-1.5 text-xs font-medium transition focus-visible:outline-2 focus-visible:outline-offset-2 disabled:cursor-not-allowed disabled:opacity-50';
 
-function ProjectCard({ project, isEditing, isDeleting, onEdit, onDelete }: ProjectCardProps) {
+function ProjectCard({
+  project,
+  isEditing,
+  isDeleting,
+  isTogglingFeatured,
+  dragHandle,
+  onEdit,
+  onDelete,
+  onToggleFeatured,
+}: ProjectCardProps) {
   return (
     <article
-      className={`flex flex-col overflow-hidden rounded-xl border bg-slate-800/50 shadow-lg shadow-black/20 transition ${
-        isEditing ? 'border-emerald-500/50 ring-1 ring-emerald-500/30' : 'border-slate-800 hover:border-slate-700'
+      className={`flex h-full flex-col overflow-hidden rounded-xl border bg-slate-800/50 transition ${
+        isEditing
+          ? 'border-emerald-500/50 ring-1 ring-emerald-500/30 shadow-lg shadow-black/20'
+          : project.isFeatured
+            ? FEATURED_CARD_CLASS
+            : 'border-slate-800 shadow-lg shadow-black/20 hover:border-slate-700'
       } ${isDeleting ? 'opacity-60' : ''}`}
     >
       {project.coverImageUrl && (
@@ -408,11 +457,11 @@ function ProjectCard({ project, isEditing, isDeleting, onEdit, onDelete }: Proje
             {project.isPublished ? 'Publicado' : 'Borrador'}
           </span>
           {project.isFeatured && (
-            <span className="rounded-full bg-amber-500/10 px-2.5 py-0.5 text-xs font-medium text-amber-400">Destacado</span>
+            <span className="rounded-full bg-emerald-500 px-2.5 py-0.5 text-xs font-semibold text-slate-950">Destacado</span>
           )}
         </div>
 
-        <h4 className="text-base font-semibold text-slate-100">{project.title}</h4>
+        <h4 className="text-base font-semibold wrap-break-word text-slate-100">{project.title}</h4>
         <p className="mt-0.5 font-mono text-xs text-slate-500">/{project.slug}</p>
         <p className="mt-3 line-clamp-3 text-sm text-slate-400">{project.summary || project.description}</p>
 
@@ -432,7 +481,10 @@ function ProjectCard({ project, isEditing, isDeleting, onEdit, onDelete }: Proje
         )}
       </div>
 
-      <div className="flex justify-end gap-2 border-t border-slate-700/60 px-5 py-3">
+      <div className="flex items-center gap-2 border-t border-slate-700/60 px-5 py-3">
+        {dragHandle}
+        <span className="flex-1" />
+        <FeaturedToggle isFeatured={project.isFeatured} isLoading={isTogglingFeatured} onToggle={() => onToggleFeatured(project)} />
         <button
           type="button"
           onClick={() => onEdit(project)}

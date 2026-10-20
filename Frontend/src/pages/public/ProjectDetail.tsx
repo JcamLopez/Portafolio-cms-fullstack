@@ -45,7 +45,7 @@ function ProjectDetailContent({ slug }: { slug: string }) {
   }, [slug]);
 
   return (
-    <section className="mx-auto max-w-4xl px-6 py-16 sm:py-24">
+    <section className="mx-auto max-w-4xl px-4 py-10 sm:px-6 sm:py-24">
       <Link
         to="/"
         className="inline-flex items-center gap-1.5 text-sm font-medium text-slate-400 transition-colors hover:text-emerald-400"
@@ -68,15 +68,15 @@ function ProjectDetailContent({ slug }: { slug: string }) {
                 Destacado
               </span>
             )}
-            <h1 className="text-3xl font-bold tracking-tight text-slate-100 sm:text-4xl">{project.title}</h1>
-            {project.summary && <p className="mt-3 text-lg text-slate-400">{project.summary}</p>}
+            <h1 className="text-2xl font-bold tracking-tight wrap-break-word text-slate-100 sm:text-4xl">{project.title}</h1>
+            {project.summary && <p className="mt-3 text-base text-slate-400 sm:text-lg">{project.summary}</p>}
           </header>
 
-          <div className="mt-8 aspect-video overflow-hidden rounded-2xl border border-slate-800 bg-linear-to-br from-slate-800 to-slate-900">
+          <div className="mt-6 aspect-video overflow-hidden rounded-xl sm:mt-8 sm:rounded-2xl border border-slate-800 bg-linear-to-br from-slate-800 to-slate-900">
             {project.coverImageUrl ? (
               <img src={project.coverImageUrl} alt={project.title} className="h-full w-full object-cover" />
             ) : (
-              <div className="flex h-full items-center justify-center text-7xl font-black text-slate-700">
+              <div className="flex h-full items-center justify-center text-5xl font-black sm:text-7xl text-slate-700">
                 {project.title.charAt(0).toUpperCase()}
               </div>
             )}

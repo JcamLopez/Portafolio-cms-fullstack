@@ -1,6 +1,7 @@
 import type { Request, Response } from 'express';
 import * as educationService from '../services/education.service.js';
 import type { EducationInput } from '../services/education.service.js';
+import type { FeaturedInput, ReorderInput } from '../schemas/common.schema.js';
 import { sendError, sendSuccess } from '../utils/response.handler.js';
 
 type EducationParams = { id: string };
@@ -84,5 +85,42 @@ export const deleteEducation = async (req: Request<EducationParams>, res: Respon
   } catch (error) {
     console.error('Error al eliminar la formación:', error);
     return sendError(res, 'Error interno al eliminar la formación');
+  }
+};
+
+export const reorderEducations = async (req: Request, res: Response) => {
+  try {
+    // req.body ya fue validado por validateSchema(reorderSchema)
+    const { ids } = req.body as ReorderInput;
+    const updated = await educationService.reorderEducations(ids);
+
+    if (!updated) {
+      return sendError(res, 'Alguno de los ids no existe; no se aplicó el nuevo orden', 404);
+    }
+
+    return sendSuccess(res, await educationService.getAllEducations(), 200, 'Orden actualizado correctamente');
+  } catch (error) {
+    console.error('Error al reordenar la formación:', error);
+    return sendError(res, 'Error interno al reordenar la formación');
+  }
+};
+
+export const setEducationFeatured = async (req: Request<EducationParams>, res: Response) => {
+  const id = parseId(req.params.id);
+  if (id === null) return sendError(res, 'El id de la formación no es válido', 400);
+
+  try {
+    // req.body ya fue validado por validateSchema(featuredSchema)
+    const { isFeatured } = req.body as FeaturedInput;
+    const item = await educationService.setEducationFeatured(id, isFeatured);
+
+    if (!item) {
+      return sendError(res, 'Formación no encontrada', 404);
+    }
+
+    return sendSuccess(res, item, 200, isFeatured ? 'Marcado como destacado' : 'Ya no está destacado');
+  } catch (error) {
+    console.error('Error al cambiar el destacado de la formación:', error);
+    return sendError(res, 'Error interno al cambiar el destacado de la formación');
   }
 };

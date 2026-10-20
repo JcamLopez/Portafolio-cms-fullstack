@@ -44,6 +44,7 @@ export const experienceSchema = z
     startDate: dateField('startDate'),
     endDate: dateField('endDate').nullable().optional(),
     isCurrent: z.boolean({ error: 'El campo isCurrent debe ser verdadero o falso' }).optional(),
+    isFeatured: z.boolean({ error: 'El campo isFeatured debe ser verdadero o falso' }).optional(),
     modality: z
       .enum(WorkModality, {
         error: `El campo modality debe ser uno de: ${Object.values(WorkModality).join(', ')}`,

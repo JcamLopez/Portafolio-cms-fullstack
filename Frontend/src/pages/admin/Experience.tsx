@@ -1,10 +1,12 @@
-import { useEffect, useState, type ChangeEvent, type SubmitEvent } from 'react';
+import { useEffect, useState, type ChangeEvent, type ReactNode, type SubmitEvent } from 'react';
 import { getApiErrorMessage } from '../../api/client';
 import {
   createExperience,
   deleteExperience,
   EXPERIENCE_TYPES,
   getExperiences,
+  reorderExperiences,
+  setExperienceFeatured,
   updateExperience,
   WORK_MODALITIES,
   type Experience as ExperienceItem,
@@ -12,6 +14,10 @@ import {
   type ExperienceType,
   type WorkModality,
 } from '../../api/experienceService';
+import FeaturedToggle from '../../components/FeaturedToggle';
+import SortableGrid from '../../components/SortableGrid';
+import { useManualOrder } from '../../hooks/useManualOrder';
+import { FEATURED_CARD_CLASS } from '../../styles/featured';
 
 const TYPE_LABELS: Record<ExperienceType, string> = {
   JOB: 'Empleo',
@@ -103,7 +109,7 @@ function formatPeriod(experience: ExperienceItem): string {
 }
 
 const inputClass =
-  'block w-full rounded-lg border border-slate-700 bg-slate-950/60 px-3.5 py-2.5 text-sm text-slate-100 placeholder:text-slate-500 outline-none transition focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/30 disabled:cursor-not-allowed disabled:opacity-40 [color-scheme:dark]';
+  'block w-full min-w-0 rounded-lg border border-slate-700 bg-slate-950/60 px-3.5 py-2.5 text-sm text-slate-100 placeholder:text-slate-500 outline-none transition focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/30 disabled:cursor-not-allowed disabled:opacity-40 [color-scheme:dark]';
 const labelClass = 'mb-1.5 block text-sm font-medium text-slate-300';
 
 export default function Experience() {
@@ -117,6 +123,10 @@ export default function Experience() {
   const [formError, setFormError] = useState<string | null>(null);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
   const [deletingId, setDeletingId] = useState<number | null>(null);
+  const { reorder, toggleFeatured, isReordering, togglingId, actionError } = useManualOrder(experiences, setExperiences, {
+    reorder: reorderExperiences,
+    setFeatured: setExperienceFeatured,
+  });
 
   const loadExperiences = async () => {
     setLoadError(null);
@@ -238,7 +248,7 @@ export default function Experience() {
       <form
         onSubmit={handleSubmit}
         noValidate
-        className="rounded-xl border border-slate-800 bg-slate-800/50 p-6 shadow-lg shadow-black/20"
+        className="rounded-xl border border-slate-800 bg-slate-800/50 p-4 shadow-lg shadow-black/20 sm:p-6"
       >
         <h3 className="mb-5 text-lg font-semibold text-slate-100">
           {editingId === null ? 'Nueva experiencia' : 'Editar experiencia'}
@@ -255,7 +265,7 @@ export default function Experience() {
           </div>
         )}
 
-        <div className="grid gap-5 md:grid-cols-2">
+        <div className="grid grid-cols-1 gap-5 md:grid-cols-2">
           <div>
             <label htmlFor="role" className={labelClass}>
               Rol / Cargo <span className="text-red-400">*</span>
@@ -383,13 +393,23 @@ export default function Experience() {
       </form>
 
       <div>
-        <div className="mb-4 flex items-baseline justify-between">
+        <div className="mb-4 flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1">
           <h3 className="text-lg font-semibold text-slate-100">Listado</h3>
-          {!isLoading && !loadError && <span className="text-sm text-slate-400">{experiences.length} registro(s)</span>}
+          {!isLoading && !loadError && (
+            <span className="text-sm text-slate-400">
+              {isReordering ? 'Guardando orden…' : `${experiences.length} registro(s) · arrastra ⠿ para ordenar`}
+            </span>
+          )}
         </div>
 
+        {actionError && (
+          <div role="alert" className="mb-4 rounded-lg border border-red-500/30 bg-red-500/10 px-4 py-3 text-sm text-red-300">
+            {actionError}
+          </div>
+        )}
+
         {isLoading ? (
-          <div className="grid gap-4 lg:grid-cols-2">
+          <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
             {Array.from({ length: 2 }, (_, i) => (
               <div key={i} className="h-36 animate-pulse rounded-xl border border-slate-800 bg-slate-800/40" />
             ))}
@@ -403,18 +423,20 @@ export default function Experience() {
             Aún no hay experiencia registrada. Añade la primera con el formulario de arriba.
           </div>
         ) : (
-          <div className="grid gap-4 lg:grid-cols-2">
-            {experiences.map((experience) => (
+          <SortableGrid items={experiences} onReorder={reorder} disabled={isReordering} className="grid grid-cols-1 gap-4 lg:grid-cols-2">
+            {(experience, dragHandle) => (
               <ExperienceCard
-                key={experience.id}
                 experience={experience}
                 isEditing={editingId === experience.id}
                 isDeleting={deletingId === experience.id}
+                isTogglingFeatured={togglingId === experience.id}
+                dragHandle={dragHandle}
                 onEdit={() => handleEdit(experience)}
                 onDelete={() => handleDelete(experience)}
+                onToggleFeatured={() => toggleFeatured(experience)}
               />
-            ))}
-          </div>
+            )}
+          </SortableGrid>
         )}
       </div>
     </section>
@@ -425,15 +447,31 @@ interface ExperienceCardProps {
   experience: ExperienceItem;
   isEditing: boolean;
   isDeleting: boolean;
+  isTogglingFeatured: boolean;
+  dragHandle: ReactNode;
   onEdit: () => void;
   onDelete: () => void;
+  onToggleFeatured: () => void;
 }
 
-function ExperienceCard({ experience, isEditing, isDeleting, onEdit, onDelete }: ExperienceCardProps) {
+function ExperienceCard({
+  experience,
+  isEditing,
+  isDeleting,
+  isTogglingFeatured,
+  dragHandle,
+  onEdit,
+  onDelete,
+  onToggleFeatured,
+}: ExperienceCardProps) {
   return (
     <article
-      className={`flex flex-col gap-4 rounded-xl border bg-slate-800/50 p-5 shadow-lg shadow-black/20 transition ${
-        isEditing ? 'border-emerald-500/60' : 'border-slate-800 hover:border-slate-700'
+      className={`flex h-full flex-col gap-4 rounded-xl border bg-slate-800/50 p-5 transition ${
+        isEditing
+          ? 'border-emerald-500/60 shadow-lg shadow-black/20'
+          : experience.isFeatured
+            ? FEATURED_CARD_CLASS
+            : 'border-slate-800 shadow-lg shadow-black/20 hover:border-slate-700'
       }`}
     >
       <div className="flex gap-4">
@@ -446,7 +484,7 @@ function ExperienceCard({ experience, isEditing, isDeleting, onEdit, onDelete }:
         </div>
 
         <div className="min-w-0 flex-1">
-          <h4 className="text-base font-semibold text-slate-100">{experience.role}</h4>
+          <h4 className="text-base font-semibold wrap-break-word text-slate-100">{experience.role}</h4>
           <p className="truncate text-sm text-slate-300">{experience.organization}</p>
           <div className="mt-2 flex flex-wrap items-center gap-1.5">
             <span className="rounded-full bg-slate-700/60 px-2.5 py-0.5 text-xs font-medium text-slate-300">
@@ -462,6 +500,9 @@ function ExperienceCard({ experience, isEditing, isDeleting, onEdit, onDelete }:
                 Actual
               </span>
             )}
+            {experience.isFeatured && (
+              <span className="rounded-full bg-emerald-500 px-2.5 py-0.5 text-xs font-semibold text-slate-950">Destacado</span>
+            )}
           </div>
           <p className="mt-2 text-xs capitalize text-slate-400">
             {formatPeriod(experience)}
@@ -473,20 +514,22 @@ function ExperienceCard({ experience, isEditing, isDeleting, onEdit, onDelete }:
       <p className="line-clamp-3 whitespace-pre-line text-sm text-slate-400">{experience.description}</p>
 
       <div className="mt-auto flex flex-wrap items-center justify-between gap-3 border-t border-slate-700/60 pt-4">
-        {experience.companyUrl ? (
-          <a
-            href={experience.companyUrl}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="text-sm font-medium text-emerald-400 hover:text-emerald-300 hover:underline"
-          >
-            Sitio de la empresa ↗
-          </a>
-        ) : (
-          <span />
-        )}
+        <div className="flex items-center gap-2">
+          {dragHandle}
+          {experience.companyUrl && (
+            <a
+              href={experience.companyUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-sm font-medium text-emerald-400 hover:text-emerald-300 hover:underline"
+            >
+              Sitio de la empresa ↗
+            </a>
+          )}
+        </div>
 
-        <div className="flex gap-2">
+        <div className="flex items-center gap-2">
+          <FeaturedToggle isFeatured={experience.isFeatured} isLoading={isTogglingFeatured} onToggle={onToggleFeatured} />
           <button
             type="button"
             onClick={onEdit}

@@ -211,6 +211,7 @@ model Experience {
   highlights   Json? // Lista de logros: ["...", "..."]
   companyUrl   String?           @db.VarChar(500)
   logoUrl      String?           @db.VarChar(500)
+  isFeatured   Boolean           @default(false)
   order        Int               @default(0)
   skills       ExperienceSkill[]
   createdAt    DateTime          @default(now())
@@ -260,6 +261,7 @@ model Education {
   description   String?       @db.Text
   credentialUrl String?       @db.VarChar(500)
   logoUrl       String?       @db.VarChar(500)
+  isFeatured    Boolean       @default(false)
   order         Int           @default(0)
   createdAt     DateTime      @default(now())
   updatedAt     DateTime      @updatedAt

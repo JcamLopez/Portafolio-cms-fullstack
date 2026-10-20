@@ -10,13 +10,19 @@ export type SkillInput = Omit<Prisma.SkillCreateInput, 'projects' | 'experiences
 const isNotFoundError = (error: unknown) =>
   error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2025';
 
+// Siguiente posición libre: los registros nuevos se añaden al final del orden manual
+const nextOrder = async (): Promise<number> => {
+  const { _max } = await prisma.skill.aggregate({ _max: { order: true } });
+  return (_max.order ?? -1) + 1;
+};
+
 /**
- * Obtiene todas las habilidades agrupadas lógicamente: primero por `category` (asc),
- * dentro de cada categoría por `order` (asc) y, a igual orden, por nombre.
+ * Obtiene las habilidades en el orden manual definido desde el admin (`order` asc).
+ * A igual `order`, por id para que el resultado sea estable.
  */
 export const getAllSkills = async (): Promise<Skill[]> => {
   return prisma.skill.findMany({
-    orderBy: [{ category: 'asc' }, { order: 'asc' }, { name: 'asc' }],
+    orderBy: [{ order: 'asc' }, { id: 'asc' }],
   });
 };
 
@@ -35,10 +41,10 @@ export const getSkillBySlug = async (slug: string): Promise<Skill | null> => {
 };
 
 /**
- * Crea una habilidad.
+ * Crea una habilidad; si no trae `order`, se añade al final.
  */
 export const createSkill = async (data: SkillInput): Promise<Skill> => {
-  return prisma.skill.create({ data });
+  return prisma.skill.create({ data: { ...data, order: data.order ?? (await nextOrder()) } });
 };
 
 /**
@@ -59,6 +65,34 @@ export const updateSkill = async (id: number, data: SkillInput): Promise<Skill |
 export const deleteSkill = async (id: number): Promise<Skill | null> => {
   try {
     return await prisma.skill.delete({ where: { id } });
+  } catch (error) {
+    if (isNotFoundError(error)) return null;
+    throw error;
+  }
+};
+
+/**
+ * Guarda el orden manual (drag & drop): el índice de cada id en `ids` pasa a ser su `order`.
+ * Todo va en una transacción: si algún id no existe no se aplica ningún cambio y devuelve false.
+ */
+export const reorderSkills = async (ids: number[]): Promise<boolean> => {
+  try {
+    await prisma.$transaction(
+      ids.map((id, index) => prisma.skill.update({ where: { id }, data: { order: index } })),
+    );
+    return true;
+  } catch (error) {
+    if (isNotFoundError(error)) return false;
+    throw error;
+  }
+};
+
+/**
+ * Activa o desactiva el estado destacado (o devuelve null si no existe).
+ */
+export const setSkillFeatured = async (id: number, isFeatured: boolean): Promise<Skill | null> => {
+  try {
+    return await prisma.skill.update({ where: { id }, data: { isFeatured } });
   } catch (error) {
     if (isNotFoundError(error)) return null;
     throw error;
