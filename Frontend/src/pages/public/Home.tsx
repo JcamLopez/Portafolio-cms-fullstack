@@ -82,8 +82,6 @@ function formatPeriod({ startDate, endDate, isCurrent }: Period): string | null 
   return end ? `${start} — ${end}` : start;
 }
 
-<<<<<<< HEAD
-=======
 // Hover de las tarjetas no destacadas; las destacadas conservan su resplandor (ver FEATURED_CARD_CLASS)
 const DEFAULT_CARD_CLASS = `border-slate-800 hover:border-emerald-500/40 hover:shadow-xl hover:shadow-emerald-500/5`;
 
@@ -112,7 +110,6 @@ function TimelineDot({ isFeatured }: { isFeatured: boolean }) {
   );
 }
 
->>>>>>> dev
 export default function Home() {
   const [profile, setProfile] = useState<Profile | null>(null);
   const [projects, setProjects] = useState<Project[]>([]);
@@ -131,13 +128,8 @@ export default function Home() {
       .then(([profileData, projectsData, skillsData, educationsData, experiencesData]) => {
         if (cancelled) return;
         setProfile(profileData);
-<<<<<<< HEAD
-        // El backend ya devuelve cada lista ordenada (relevancia + cronológico inverso).
-        // Solo se muestran los proyectos publicados.
-=======
         // Todo llega en el orden manual definido en el admin (order asc): aquí no se reordena nada.
         // Solo se muestran los proyectos publicados
->>>>>>> dev
         setProjects(projectsData.filter((project) => project.isPublished));
         setSkills(skillsData);
         setEducations(educationsData);
@@ -635,27 +627,11 @@ function EducationItem({ education }: { education: Education }) {
 
   return (
     <li className="relative">
-<<<<<<< HEAD
-      {/* Punto de la línea de tiempo */}
-      <span
-        aria-hidden="true"
-        className={`absolute top-7 left-[-2.97rem] hidden h-3.5 w-3.5 rounded-full border-2 border-slate-950 sm:block ${
-          education.isCurrent || isPrimary ? 'bg-emerald-400 ring-4 ring-emerald-400/20' : 'bg-slate-600'
-        }`}
-      />
-
-      <article
-        className={`group rounded-2xl border p-6 transition-all hover:-translate-y-0.5 hover:shadow-xl ${
-          isPrimary
-            ? 'border-emerald-500/50 border-l-4 border-l-emerald-400 bg-linear-to-br from-emerald-500/10 via-slate-900/60 to-slate-900/60 shadow-lg shadow-emerald-500/10 hover:border-emerald-400/70 hover:shadow-emerald-500/15'
-            : 'border-slate-800 bg-slate-900/60 hover:border-emerald-500/40 hover:shadow-emerald-500/5'
-=======
       <TimelineDot isFeatured={education.isFeatured} />
 
       <article
         className={`group rounded-2xl border bg-slate-900/60 p-4 transition-all sm:p-6 hover:-translate-y-0.5 ${
           education.isFeatured ? FEATURED_CARD_CLASS : DEFAULT_CARD_CLASS
->>>>>>> dev
         }`}
       >
         <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
